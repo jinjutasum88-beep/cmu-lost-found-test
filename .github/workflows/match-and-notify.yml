@@ -36,4 +36,4 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SENDER_NAME: "CMU LOST&FOUND"
           SITE_URL: "https://jinjutasum88-beep.github.io/cmu-lost-found-final/"
-        run: node scripts/match-and-notify.mjs
+        run: node match-and-notify.mjs
