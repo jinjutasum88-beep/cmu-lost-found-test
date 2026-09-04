@@ -1,0 +1,13 @@
+{
+  "name": "cmu-lost-found-worker",
+  "version": "1.0.0",
+  "description": "ตัวจับคู่ประกาศและส่งอีเมลแจ้งเตือน ทำงานบน GitHub Actions",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "match": "node scripts/match-and-notify.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

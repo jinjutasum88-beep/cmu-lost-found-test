@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMU LOST&FOUND — ยืนยันบัญชี</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F1FC; --card:#FFFFFF; --purple:#6D45CE; --purple-dark:#5A34B4;
+    --field:#F3F0FB; --ink:#2E2A45; --muted:#6F6A86; --line:#E5DFF5;
+    --lost:#C0392B; --found:#1E7A55;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans Thai",system-ui,sans-serif; line-height:1.6;
+    display:grid; place-items:center; padding:32px 16px;
+  }
+  .card{
+    background:var(--card); width:100%; max-width:430px; text-align:center;
+    border-radius:18px; padding:36px 34px 30px;
+    box-shadow:0 2px 24px rgba(80,50,150,.07);
+  }
+  .badge{
+    width:58px; height:58px; border-radius:50%; display:grid; place-items:center;
+    font-size:1.7rem; margin:0 auto 16px;
+  }
+  .badge.ok{background:#E8F5EF; color:var(--found)}
+  .badge.err{background:#FCEBE9; color:var(--lost)}
+  .badge.wait{background:#EDE7FA; color:var(--purple)}
+  h1{font-size:1.3rem; font-weight:700; margin:0 0 10px}
+  p{margin:0 0 6px; color:var(--muted); font-size:.95rem}
+  strong{color:var(--purple); font-weight:600}
+  label{display:block; text-align:left; font-size:.9rem; color:var(--muted); margin:16px 0 6px}
+  input{
+    width:100%; padding:12px 14px; border:1px solid transparent; background:var(--field);
+    border-radius:11px; font-family:inherit; font-size:1rem; color:var(--ink);
+  }
+  input:focus{outline:none; border-color:var(--purple); background:#fff}
+  .btn{
+    display:block; width:100%; margin-top:22px; padding:13px; border:0; border-radius:11px;
+    background:var(--purple); color:#fff; font-family:inherit; font-size:1rem; font-weight:600;
+    cursor:pointer; text-decoration:none;
+  }
+  .btn:hover{background:var(--purple-dark)}
+  .msg{margin-top:14px; font-size:.9rem; color:var(--lost); min-height:1.2em}
+  .hidden{display:none !important}
+  .spin{
+    width:32px; height:32px; border:3px solid var(--line); border-top-color:var(--purple);
+    border-radius:50%; margin:0 auto 18px; animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div id="loading">
+    <div class="spin"></div>
+    <h1>กำลังตรวจสอบลิงก์</h1>
+    <p>รอสักครู่</p>
+  </div>
+
+  <div id="okVerify" class="hidden">
+    <div class="badge ok">✓</div>
+    <h1>ยืนยันอีเมลเรียบร้อย</h1>
+    <p>บัญชี <strong id="okEmail"></strong> พร้อมใช้งานแล้ว</p>
+    <a class="btn" href="index.html?verified=1">เข้าสู่ระบบ</a>
+  </div>
+
+  <div id="resetForm" class="hidden">
+    <div class="badge wait">🔑</div>
+    <h1>ตั้งรหัสผ่านใหม่</h1>
+    <p>สำหรับบัญชี <strong id="resetEmail"></strong></p>
+    <label for="np1">รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+    <input id="np1" type="password" minlength="6" autocomplete="new-password">
+    <label for="np2">ยืนยันรหัสผ่านใหม่</label>
+    <input id="np2" type="password" minlength="6" autocomplete="new-password">
+    <button class="btn" id="savePass">บันทึกรหัสผ่านใหม่</button>
+    <div class="msg" id="resetMsg"></div>
+  </div>
+
+  <div id="okReset" class="hidden">
+    <div class="badge ok">✓</div>
+    <h1>เปลี่ยนรหัสผ่านแล้ว</h1>
+    <p>เข้าสู่ระบบด้วยรหัสผ่านใหม่ได้เลย</p>
+    <a class="btn" href="index.html">ไปหน้าเข้าสู่ระบบ</a>
+  </div>
+
+  <div id="fail" class="hidden">
+    <div class="badge err">!</div>
+    <h1>ลิงก์นี้ใช้ไม่ได้</h1>
+    <p id="failMsg"></p>
+    <a class="btn" href="index.html">กลับหน้าเข้าสู่ระบบ</a>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, applyActionCode, checkActionCode,
+  verifyPasswordResetCode, confirmPasswordReset
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { firebaseConfig, thaiError } from "./firebase-config.js";
+
+const auth = getAuth(initializeApp(firebaseConfig));
+auth.languageCode = "th";
+
+const $ = id => document.getElementById(id);
+const view = id => ["loading","okVerify","resetForm","okReset","fail"]
+  .forEach(v => $(v).classList.toggle("hidden", v !== id));
+const fail = text => { $("failMsg").textContent = text; view("fail"); };
+
+const q = new URLSearchParams(location.search);
+const mode = q.get("mode");
+const oobCode = q.get("oobCode");
+
+(async () => {
+  if (!oobCode) return fail("ลิงก์ไม่ครบถ้วน ลองกดลิงก์จากอีเมลอีกครั้ง หรือขอลิงก์ใหม่");
+  try{
+    if (mode === "verifyEmail"){
+      const info = await checkActionCode(auth, oobCode);
+      await applyActionCode(auth, oobCode);
+      $("okEmail").textContent = info?.data?.email || "";
+      view("okVerify");
+    } else if (mode === "resetPassword"){
+      $("resetEmail").textContent = await verifyPasswordResetCode(auth, oobCode);
+      view("resetForm");
+    } else if (mode === "recoverEmail"){
+      await applyActionCode(auth, oobCode);
+      view("okVerify");
+    } else {
+      fail("ไม่รู้จักคำสั่งของลิงก์นี้");
+    }
+  }catch(err){ fail(thaiError(err.code)); }
+})();
+
+$("savePass").onclick = async () => {
+  const msg = $("resetMsg"); msg.textContent = "";
+  const p1 = $("np1").value, p2 = $("np2").value;
+  if (p1.length < 6) return msg.textContent = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+  if (p1 !== p2)     return msg.textContent = "รหัสผ่านสองช่องไม่ตรงกัน";
+  try{
+    await confirmPasswordReset(auth, oobCode, p1);
+    view("okReset");
+  }catch(err){ msg.textContent = thaiError(err.code); }
+};
+</script>
+</body>
+</html>
