@@ -17,7 +17,7 @@
    =================================================================== */
 
 import admin from "firebase-admin";
-import { findMatches, passesHardFilter, cosineSimilarity } from "../matching.js";
+import { findMatches, passesHardFilter, cosineSimilarity } from "./matching.js";
 
 /* ---------- ตั้งค่าจาก GitHub Secrets ---------- */
 const {
