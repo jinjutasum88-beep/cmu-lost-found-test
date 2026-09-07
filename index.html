@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMU LOST&amp;FOUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4FB; --paper-2:#EEE9F9; --card:#FFFFFF;
+    --ink:#241733; --ink-soft:#6B6284; --line:#E8E2F3;
+    --lost:#B32E63; --lost-soft:#FBE4EE;
+    --found:#1B7A5F; --found-soft:#DFF3EB;
+    --purple:#6B41B8; --purple-deep:#4F2B93; --purple-soft:#EFE7FB;
+    --amber:#9A6510; --amber-soft:#FBF1DC;
+    --shadow:0 10px 26px -14px rgba(91,50,168,.35);
+    --shadow-sm:0 4px 12px -6px rgba(91,50,168,.25);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'Sarabun',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,.display{font-family:'Prompt',sans-serif;font-weight:600}
+  button{font-family:inherit}
+  ::selection{background:var(--purple-soft)}
+  .hidden{display:none !important}
+
+  .skip-link{position:absolute;left:-9999px;top:0;z-index:999;background:var(--purple);color:#fff;padding:12px 18px;border-radius:0 0 12px 0}
+  .skip-link:focus{left:0}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  :focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+
+  .stamp{display:inline-flex;align-items:center;gap:6px;font-family:'Prompt',sans-serif;font-weight:500;font-size:12px;padding:4px 12px;border-radius:999px}
+  .stamp.lost{color:var(--lost);background:var(--lost-soft)}
+  .stamp.found{color:var(--found);background:var(--found-soft)}
+
+  header.top{position:sticky;top:0;z-index:20;background:var(--card);box-shadow:var(--shadow-sm);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand .tagicon{width:38px;height:38px;flex:none;border-radius:12px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Prompt',sans-serif;font-weight:600;color:#fff;font-size:14px}
+  .brand h1{font-size:18px;margin:0;line-height:1.15}
+  .brand p{margin:0;font-size:11.5px;color:var(--ink-soft)}
+  .userchip{display:flex;align-items:center;gap:8px;font-size:13.5px;flex:none}
+  .userchip .name{font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .btn{font-size:13.5px;padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink);font-weight:500;transition:.15s}
+  .btn:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-soft)}
+  .btn.primary{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:var(--shadow-sm)}
+  .btn.primary:hover{background:var(--purple-deep);border-color:var(--purple-deep);color:#fff}
+  .btn.accent{border-color:var(--found);color:var(--found);background:var(--found-soft)}
+  .btn.accent:hover{background:var(--found);color:#fff}
+  .btn.danger{border-color:var(--lost);color:var(--lost);background:var(--lost-soft)}
+  .btn.danger:hover{background:var(--lost);color:#fff}
+  .btn.small{padding:6px 12px;font-size:12px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .langbtn{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--ink-soft);font-weight:600;letter-spacing:.03em}
+  .langbtn:hover{border-color:var(--purple);color:var(--purple)}
+
+  /* ---------- auth ---------- */
+  #authScreen,#verifyScreen{max-width:420px;margin:50px auto;padding:0 20px 60px}
+  .auth-card{background:var(--card);border-radius:24px;padding:34px 30px;box-shadow:var(--shadow)}
+  .auth-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .auth-card h2{font-size:24px;margin:0}
+  .auth-card p.sub{margin:4px 0 22px;color:var(--ink-soft);font-size:13.5px}
+  .tabs-auth{display:flex;gap:6px;margin-bottom:20px;background:var(--paper-2);padding:5px;border-radius:999px}
+  .tabs-auth button{flex:1;padding:9px;border-radius:999px;border:none;background:transparent;font-size:13.5px;cursor:pointer;color:var(--ink-soft);font-weight:500}
+  .tabs-auth button.active{color:var(--purple);background:var(--card);box-shadow:var(--shadow-sm);font-weight:600}
+
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;font-weight:500}
+  .field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:14.5px;background:var(--paper);color:var(--ink)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--purple);background:#fff}
+  .field .hint{font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.6}
+  .msgline{font-size:12.5px;margin-top:6px;min-height:1em;line-height:1.6}
+
+  /* ช่องรหัสผ่านพร้อมปุ่มลูกตาอยู่ในช่อง */
+  .pw-wrap{position:relative}
+  .pw-wrap input{padding-right:44px}
+  .pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:16px;padding:6px 8px;border-radius:8px;line-height:1;color:var(--ink-soft)}
+  .pw-eye:hover{background:var(--paper-2)}
+  .pw-bar{height:4px;background:var(--paper-2);border-radius:999px;overflow:hidden;margin-top:8px}
+  .pw-bar i{display:block;height:100%;width:0;border-radius:999px;transition:width .25s,background .25s}
+  .pw-missing{font-size:11.5px;color:var(--lost);margin-top:6px;line-height:1.6}
+
+  #authError{font-size:13px;margin:4px 0 12px;min-height:1em;color:var(--lost)}
+  .authnote{font-size:11.5px;color:var(--ink-soft);margin-top:16px;text-align:center;line-height:1.6}
+
+  .tips{background:var(--paper);border-radius:14px;padding:14px 16px;margin-top:18px;font-size:12px;color:var(--ink-soft);line-height:1.8}
+  .tips b{color:var(--ink);font-family:'Prompt',sans-serif;display:block;margin-bottom:6px}
+  .tips ul{margin:0;padding-left:18px}
+
+  /* ---------- app ---------- */
+  #appScreen{max-width:1080px;margin:0 auto;padding:0 20px 80px}
+  nav.tabs{display:flex;gap:4px;overflow-x:auto;padding:14px 0;margin-bottom:22px;background:var(--card);border-radius:999px;box-shadow:var(--shadow-sm);position:sticky;top:70px;z-index:10}
+  nav.tabs button{white-space:nowrap;padding:10px 18px;border-radius:999px;border:none;margin:0 4px;background:transparent;font-size:14px;cursor:pointer;color:var(--ink-soft);font-weight:500;display:flex;align-items:center;gap:6px}
+  nav.tabs button.active{background:var(--purple);color:#fff;font-weight:600}
+  .badge-count{background:#fff;color:var(--lost);font-size:10.5px;padding:1px 6px;border-radius:999px;font-weight:700}
+  nav.tabs button.active .badge-count{background:var(--lost);color:#fff}
+
+  section.view{display:none}
+  section.view.active{display:block}
+  .view-head{margin-bottom:16px}
+  .view-head h2{font-size:22px;margin:0}
+  .view-head .sub{font-size:13px;color:var(--ink-soft);margin-top:4px}
+
+  .filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .filter-row select,.filter-row input{padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:13px;color:var(--ink);font-family:inherit}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+  .tagcard{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s;width:100%;text-align:left;border:0;padding:0;font-family:inherit;cursor:pointer}
+  .tagcard:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .tagcard .photo{height:150px;background:var(--paper-2);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;overflow:hidden}
+  .tagcard .photo img{width:100%;height:100%;object-fit:cover}
+  .tagcard .body{padding:16px;display:flex;flex-direction:column;gap:9px;flex:1}
+  .tagcard .toprow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .tagcard .cat{font-family:'Prompt',sans-serif;font-weight:600;font-size:15px}
+  .tagcard .desc{font-size:13px;color:var(--ink-soft);line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .tagcard .meta{font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:9px}
+  .colordot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
+  .status-strip{font-size:11px;text-align:center;padding:6px;font-weight:500;background:var(--found);color:#fff}
+
+  .empty{text-align:center;padding:56px 20px;color:var(--ink-soft);grid-column:1/-1}
+  .empty .display{font-size:20px;color:var(--ink);margin-bottom:6px}
+
+  .formcard{background:var(--card);border-radius:24px;padding:28px;max-width:640px;box-shadow:var(--shadow);margin:0 auto 16px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .typepick{display:flex;gap:10px;margin-bottom:18px}
+  .typepick label{flex:1;border:1.5px solid var(--line);border-radius:14px;padding:14px;text-align:center;cursor:pointer;font-weight:600;font-family:'Prompt',sans-serif;font-size:15px;color:var(--ink-soft);transition:.15s}
+  .typepick input{position:absolute;opacity:0;width:1px;height:1px}
+  .typepick label:has(input:checked).lostL{border-color:var(--lost);background:var(--lost-soft);color:var(--lost)}
+  .typepick label:has(input:checked).foundL{border-color:var(--found);background:var(--found-soft);color:var(--found)}
+  .typepick label:has(input:focus-visible){outline:3px solid var(--purple);outline-offset:2px}
+  .upload-preview{margin-top:10px;border:1.5px dashed var(--line);border-radius:14px;padding:8px;display:none;background:var(--paper)}
+  .upload-preview img{width:100%;height:150px;object-fit:cover;border-radius:10px;display:block}
+
+  .notif{background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--shadow-sm)}
+  .notif.unread{box-shadow:0 0 0 1.5px var(--purple),var(--shadow-sm)}
+  .notif .txt{font-size:14px}
+  .contactreveal{background:var(--found-soft);color:var(--found);border-radius:12px;padding:11px 16px;font-size:13px;margin-top:10px;line-height:1.7}
+  .pending-note{background:var(--amber-soft);color:var(--amber);border-radius:12px;padding:11px 16px;font-size:13px;margin-top:10px}
+
+  .match-page{max-width:900px;margin:0 auto}
+  .match-comparison{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .match-item-card{background:var(--card);border-radius:22px;overflow:hidden;box-shadow:var(--shadow)}
+  .match-photo{height:240px;background:var(--paper-2);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--ink-soft);font-size:12px}
+  .match-photo img{width:100%;height:100%;object-fit:cover}
+  .match-body{padding:18px}
+  .match-body h3{margin:10px 0 8px;font-size:18px}
+  .match-desc{color:var(--ink-soft);line-height:1.6;font-size:13.5px;min-height:60px}
+  .match-score-box{margin:18px 0;background:var(--purple-soft);border-radius:18px;padding:16px;text-align:center}
+  .score-big{font-family:'Prompt',sans-serif;color:var(--purple-deep);font-size:30px;font-weight:700}
+  .score-label{color:var(--ink-soft);font-size:12px}
+  .match-reasons{list-style:none;padding:0;margin:12px auto 0;max-width:420px;text-align:left;font-size:12.5px;color:var(--ink-soft)}
+  .match-reasons li{padding-left:20px;position:relative;margin-bottom:3px}
+  .match-reasons li::before{content:"✓";position:absolute;left:2px;color:var(--found)}
+  .match-actions{display:flex;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+  .match-actions button{min-width:190px}
+  .note-box{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--ink-soft);font-size:12.5px;line-height:1.7;margin-top:18px}
+  .progress-line{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
+
+  /* ---------- profile ---------- */
+  .panel{background:var(--card);border-radius:20px;padding:24px;box-shadow:var(--shadow-sm);margin-bottom:16px;max-width:640px}
+  .panel h3{margin:0 0 4px;font-size:17px}
+  .panel .psub{color:var(--ink-soft);font-size:12.5px;margin:0 0 18px;line-height:1.7}
+  .panel.danger{border:1.5px solid var(--lost-soft)}
+  .switch-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .switch-row:first-of-type{border-top:0}
+  .switch-row .txt{flex:1;font-size:13.5px;line-height:1.6}
+  .switch-row .txt small{display:block;color:var(--ink-soft);font-size:11.5px;margin-top:3px}
+  .switch{position:relative;width:46px;height:26px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .switch span{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.2s;pointer-events:none}
+  .switch span::after{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + span{background:var(--found)}
+  .switch input:checked + span::after{transform:translateX(20px)}
+  .switch input:focus-visible + span{outline:3px solid var(--purple);outline-offset:2px}
+
+  /* ---------- admin ---------- */
+  .goals{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px}
+  .goal{background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--shadow-sm)}
+  .goal .big{font-family:'Prompt',sans-serif;font-size:24px;font-weight:700;color:var(--purple-deep)}
+  .goal .big small{font-size:13px;color:var(--ink-soft);font-weight:400}
+  .goal .lbl{font-size:12.5px;color:var(--ink-soft);margin:6px 0 8px}
+  .goal .track{height:6px;background:var(--paper-2);border-radius:999px;overflow:hidden}
+  .goal .track i{display:block;height:100%;border-radius:999px;background:var(--purple)}
+  .goal .track i.done{background:var(--found)}
+  .goal .note{font-size:11px;color:var(--ink-soft);margin-top:6px}
+  .admin-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:20px}
+  .admin-stat{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow-sm);cursor:pointer;text-align:left;transition:.15s;font-family:inherit}
+  .admin-stat:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--purple)}
+  .admin-stat .num{font-family:'Prompt',sans-serif;font-size:26px;font-weight:700;color:var(--purple-deep);line-height:1}
+  .admin-stat .label{font-size:12px;color:var(--ink-soft);margin-top:8px}
+  .admin-detail-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .admin-post-row{background:var(--card);border-radius:18px;box-shadow:var(--shadow-sm);overflow:hidden;display:grid;grid-template-columns:150px 1fr;cursor:pointer;text-align:left;border:0;padding:0;font-family:inherit}
+  .admin-post-row .thumb{height:150px;background:var(--paper-2);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px}
+  .admin-post-row .thumb img{width:100%;height:100%;object-fit:cover}
+  .admin-post-row .info{padding:14px}
+  .admin-post-row .info h3{margin:7px 0 6px;font-size:16px}
+  .admin-post-row .info p{margin:0 0 7px;font-size:12px;color:var(--ink-soft);line-height:1.5}
+
+  .modal-bg{position:fixed;inset:0;background:#241733aa;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal{background:var(--card);border-radius:20px;padding:24px;max-width:440px;width:100%;box-shadow:var(--shadow);max-height:88vh;overflow:auto}
+
+  footer.foot{text-align:center;color:var(--ink-soft);font-size:12px;padding:30px 20px 10px}
+
+  #bootScreen{display:grid;place-items:center;min-height:70vh}
+  .spin{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--purple);border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation:none}.tagcard{transition:none}}
+
+  @media (max-width:820px){.admin-stats{grid-template-columns:repeat(2,1fr)}.admin-detail-list{grid-template-columns:1fr}}
+  @media (max-width:640px){.row2{grid-template-columns:1fr}nav.tabs{top:62px}.match-comparison{grid-template-columns:1fr}.match-actions button{width:100%}}
+  @media (max-width:420px){
+    header.top{padding:12px}.brand h1{font-size:15px}.brand p{display:none}
+    .userchip .name{display:none}.userchip .btn{padding:7px 10px;font-size:11px}
+    #appScreen{padding-left:10px;padding-right:10px}
+    nav.tabs button{font-size:11.5px;padding:8px 11px}
+    .admin-post-row{grid-template-columns:110px 1fr}
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#mainContent" data-i18n="common.skipToMain"></a>
+
+<div id="bootScreen"><div class="spin" role="status" aria-live="polite"><span class="sr-only" data-i18n="common.loading"></span></div></div>
+
+<!-- ================= AUTH ================= -->
+<div id="authScreen" class="hidden">
+  <div class="auth-card">
+    <div class="auth-top">
+      <h2 data-i18n="app.name"></h2>
+      <button class="langbtn" id="langBtnAuth" onclick="toggleLang()" data-i18n-aria="common.langSwitch"></button>
+    </div>
+    <p class="sub" data-i18n="auth.headline"></p>
+
+    <div class="tabs-auth" role="tablist">
+      <button id="tabLoginBtn" class="active" role="tab" onclick="switchAuthTab('login')" data-i18n="auth.login"></button>
+      <button id="tabSignupBtn" role="tab" onclick="switchAuthTab('signup')" data-i18n="auth.signup"></button>
+    </div>
+    <div id="authError" role="alert" aria-live="assertive"></div>
+
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="field">
+        <label for="loginEmail" data-i18n="auth.email"></label>
+        <input type="email" id="loginEmail" required autocomplete="email" data-i18n-ph="auth.emailPh">
+      </div>
+      <div class="field">
+        <label for="loginPass" data-i18n="auth.password"></label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPass" required autocomplete="current-password">
+          <button type="button" class="pw-eye" onclick="toggleEye('loginPass',this)" data-i18n-aria="auth.showPassword">👁</button>
+        </div>
+      </div>
+      <button class="btn primary" style="width:100%" type="submit" id="loginBtn" data-i18n="auth.login"></button>
+      <p style="text-align:center;margin:12px 0 0">
+        <a href="#" style="font-size:12.5px;color:var(--purple)" onclick="return handleForgotPassword()" data-i18n="auth.forgot"></a>
+      </p>
+    </form>
+
+    <form id="signupForm" class="hidden" onsubmit="return handleSignup(event)">
+      <div class="field">
+        <label for="suName" data-i18n="auth.displayName"></label>
+        <input type="text" id="suName" required autocomplete="name" data-i18n-ph="auth.displayNamePh">
+      </div>
+      <div class="field">
+        <label for="suEmail" data-i18n="auth.email"></label>
+        <input type="email" id="suEmail" required autocomplete="email" data-i18n-ph="auth.emailPh" oninput="onPasswordInput()">
+      </div>
+      <div class="field">
+        <label for="suPass" data-i18n="auth.password"></label>
+        <div class="pw-wrap">
+          <input type="password" id="suPass" required autocomplete="new-password" oninput="onPasswordInput()"
+                 aria-describedby="pwHint pwMissing">
+          <button type="button" class="pw-eye" onclick="toggleEye('suPass',this)" data-i18n-aria="auth.showPassword">👁</button>
+        </div>
+        <div class="pw-bar"><i id="pwBar"></i></div>
+        <div class="hint" id="pwHint" data-i18n="auth.pwHint"></div>
+        <div class="pw-missing" id="pwMissing" role="status" aria-live="polite"></div>
+      </div>
+      <div class="field">
+        <label for="suPass2" data-i18n="auth.passwordConfirm"></label>
+        <div class="pw-wrap">
+          <input type="password" id="suPass2" required autocomplete="new-password" oninput="onPasswordInput()">
+          <button type="button" class="pw-eye" onclick="toggleEye('suPass2',this)" data-i18n-aria="auth.showPassword">👁</button>
+        </div>
+        <div class="msgline" id="pwMatchMsg" role="status" aria-live="polite"></div>
+      </div>
+      <button class="btn primary" style="width:100%" type="submit" id="signupBtn" data-i18n="auth.signup"></button>
+    </form>
+
+    <p class="authnote"><span data-i18n="auth.note"></span><br><span data-i18n="auth.note2"></span></p>
+  </div>
+</div>
+
+<!-- ================= VERIFY GATE ================= -->
+<div id="verifyScreen" class="hidden">
+  <div class="auth-card">
+    <div class="auth-top">
+      <h2 data-i18n="verify.title"></h2>
+      <button class="langbtn" id="langBtnVerify" onclick="toggleLang()" data-i18n-aria="common.langSwitch"></button>
+    </div>
+    <p class="sub" id="verifySentTo"></p>
+    <div class="msgline" id="verifyMsg" role="status" aria-live="polite" style="margin-bottom:12px"></div>
+    <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="checkEmailVerified()" data-i18n="verify.recheck"></button>
+    <button class="btn" style="width:100%;margin-bottom:10px" id="resendBtn" onclick="resendVerification()" data-i18n="verify.resend"></button>
+    <button class="btn small" style="width:100%" onclick="handleLogout()" data-i18n="verify.logout"></button>
+    <div class="tips">
+      <b data-i18n="verify.spamTitle"></b>
+      <ul>
+        <li data-i18n="verify.spamTip1"></li>
+        <li data-i18n="verify.spamTip2"></li>
+        <li data-i18n="verify.spamTip3"></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appScreen" class="hidden">
+  <header class="top">
+    <div class="brand">
+      <div class="tagicon" aria-hidden="true">L&amp;F</div>
+      <div>
+        <h1 data-i18n="app.name"></h1>
+        <p data-i18n="app.tagline"></p>
+      </div>
+    </div>
+    <div class="userchip">
+      <span class="name" id="userNameChip"></span>
+      <button class="langbtn" id="langBtnApp" onclick="toggleLang()" data-i18n-aria="common.langSwitch"></button>
+      <button class="btn small" id="refreshBtn" onclick="refreshNow()" data-i18n-aria="nav.refresh" data-i18n-title="nav.refresh">↻</button>
+      <button class="btn small" onclick="handleLogout()" data-i18n="nav.logout"></button>
+    </div>
+  </header>
+
+  <nav class="tabs" data-i18n-aria="nav.menu">
+    <button class="active" onclick="showView('mine')" data-tab="mine" data-i18n="nav.mine"></button>
+    <button onclick="showView('create')" data-tab="create" data-i18n="nav.create"></button>
+    <button onclick="showView('notif')" data-tab="notif"><span data-i18n="nav.notif"></span><span class="badge-count hidden" id="notifBadge">0</span></button>
+    <button onclick="showView('matches')" data-tab="matches" data-i18n="nav.matches"></button>
+    <button onclick="showView('profile')" data-tab="profile" data-i18n="nav.profile"></button>
+    <button onclick="showView('admin')" data-tab="admin" id="adminTab" class="hidden" data-i18n="nav.admin"></button>
+  </nav>
+
+  <main id="mainContent" tabindex="-1">
+    <!-- MY POSTS -->
+    <section id="view-mine" class="view active">
+      <div class="view-head"><h2 data-i18n="mine.title"></h2><div class="sub" data-i18n="mine.sub"></div></div>
+      <div class="filter-row">
+        <label class="sr-only" for="mType" data-i18n="mine.filterType"></label>
+        <select id="mType" onchange="renderMine()"></select>
+        <label class="sr-only" for="mCat" data-i18n="mine.filterCat"></label>
+        <select id="mCat" onchange="renderMine()"></select>
+        <label class="sr-only" for="mStatus" data-i18n="mine.filterStatus"></label>
+        <select id="mStatus" onchange="renderMine()"></select>
+        <label class="sr-only" for="mQ" data-i18n="mine.search"></label>
+        <input id="mQ" type="search" oninput="renderMine()" data-i18n-ph="mine.searchPh" style="min-width:230px">
+      </div>
+      <p class="sub" id="mineCount" role="status" aria-live="polite" style="margin-bottom:14px"></p>
+      <div class="grid" id="mineGrid"></div>
+    </section>
+
+    <!-- CREATE -->
+    <section id="view-create" class="view">
+      <div class="view-head" style="text-align:center"><h2 data-i18n="create.title"></h2></div>
+      <div class="formcard">
+        <form id="postForm" onsubmit="return handleCreatePost(event)">
+          <div class="typepick">
+            <label class="lostL"><input type="radio" name="ptype" value="lost" checked><span data-i18n="create.typeLost"></span></label>
+            <label class="foundL"><input type="radio" name="ptype" value="found"><span data-i18n="create.typeFound"></span></label>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="pCategory" data-i18n="create.category"></label>
+              <select id="pCategory" required onchange="toggleOther('pCategory')"></select>
+              <input type="text" id="pCategoryOther" class="hidden" style="margin-top:8px" data-i18n-ph="create.categoryOther" data-i18n-aria="create.categoryOther">
+            </div>
+            <div class="field">
+              <label for="pColor" data-i18n="create.color"></label>
+              <select id="pColor" required onchange="toggleOther('pColor')"></select>
+              <input type="text" id="pColorOther" class="hidden" style="margin-top:8px" data-i18n-ph="create.colorOther" data-i18n-aria="create.colorOther">
+            </div>
+          </div>
+          <div class="field">
+            <label for="pDesc" data-i18n="create.desc"></label>
+            <textarea id="pDesc" rows="4" required data-i18n-ph="create.descPh"></textarea>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="pLocation" data-i18n="create.location"></label>
+              <select id="pLocation" required onchange="toggleOther('pLocation')"></select>
+              <input type="text" id="pLocationOther" class="hidden" style="margin-top:8px" data-i18n-ph="create.locationOther" data-i18n-aria="create.locationOther">
+            </div>
+            <div class="field">
+              <label for="pDate" data-i18n="create.date"></label>
+              <input type="date" id="pDate" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="pImage" data-i18n="create.image"></label>
+            <input type="file" id="pImage" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewPostImage(event)">
+            <div class="msgline" id="imageMsg" role="status" aria-live="polite"></div>
+            <div id="imagePreview" class="upload-preview"><img id="imagePreviewImg" alt=""></div>
+          </div>
+          <button class="btn primary" style="width:100%;margin-top:6px" type="submit" id="postSubmitBtn" data-i18n="create.submit"></button>
+          <div class="msgline" id="postMsg" role="status" aria-live="polite" style="font-size:13px"></div>
+          <p class="hint" style="margin-top:12px;font-size:12px;color:var(--ink-soft);line-height:1.7" data-i18n="create.explain"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- NOTIFICATIONS -->
+    <section id="view-notif" class="view">
+      <div class="view-head"><h2 data-i18n="notif.title"></h2></div>
+      <div id="notifList"></div>
+    </section>
+
+    <!-- MATCHES -->
+    <section id="view-matches" class="view">
+      <div class="view-head"><h2 data-i18n="match.title"></h2></div>
+      <div id="matchesOverview"></div>
+    </section>
+
+    <!-- MATCH DETAIL -->
+    <section id="view-match-detail" class="view">
+      <div class="match-page">
+        <div class="view-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div><h2 data-i18n="match.checkTitle"></h2><div class="sub" data-i18n="match.checkSub"></div></div>
+          <button class="btn small" onclick="showView('matches')" data-i18n="match.backToList"></button>
+        </div>
+        <div id="matchDetailContent"></div>
+      </div>
+    </section>
+
+    <!-- POST DETAIL -->
+    <section id="view-post-detail" class="view">
+      <div class="match-page">
+        <div class="view-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <h2 data-i18n="detail.title"></h2>
+          <button class="btn small" onclick="showView('mine')" data-i18n="nav.mine"></button>
+        </div>
+        <div id="postDetailContent"></div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="view-profile" class="view">
+      <div class="view-head"><h2 data-i18n="profile.title"></h2><div class="sub" data-i18n="profile.sub"></div></div>
+
+      <div class="panel">
+        <h3 data-i18n="profile.info"></h3>
+        <p class="psub" data-i18n="profile.displayNameHint"></p>
+        <div class="field">
+          <label for="prName" data-i18n="profile.displayName"></label>
+          <input type="text" id="prName" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="prEmail" data-i18n="profile.email"></label>
+          <input type="email" id="prEmail" disabled>
+          <div class="hint" data-i18n="profile.emailFixed"></div>
+        </div>
+        <div class="field">
+          <label for="prPhone" data-i18n="profile.phone"></label>
+          <input type="tel" id="prPhone" data-i18n-ph="profile.phonePh" autocomplete="tel">
+          <div class="hint" data-i18n="profile.phoneHint"></div>
+        </div>
+        <div class="field">
+          <label for="prFaculty" data-i18n="profile.faculty"></label>
+          <input type="text" id="prFaculty" data-i18n-ph="profile.facultyPh">
+        </div>
+        <button class="btn primary" onclick="saveProfile()" id="prSaveBtn" data-i18n="common.save"></button>
+        <div class="msgline" id="prMsg" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="panel">
+        <h3 data-i18n="profile.prefs"></h3>
+        <p class="psub"></p>
+        <div class="switch-row">
+          <div class="txt"><span data-i18n="profile.notifyEmail"></span><small data-i18n="profile.notifyEmailHint"></small></div>
+          <span class="switch"><input type="checkbox" id="prNotify" onchange="savePrefs()" data-i18n-aria="profile.notifyEmail"><span></span></span>
+        </div>
+        <div class="field" style="margin-top:16px">
+          <label for="prLang" data-i18n="profile.language"></label>
+          <select id="prLang" onchange="setLangFromProfile(this.value)">
+            <option value="th">ไทย</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 data-i18n="profile.security"></h3>
+        <p class="psub" data-i18n="profile.changePwHint"></p>
+        <button class="btn" onclick="sendResetFromProfile()" data-i18n="profile.sendResetLink"></button>
+        <div class="msgline" id="prPwMsg" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="panel danger">
+        <h3 data-i18n="profile.danger"></h3>
+        <p class="psub" data-i18n="profile.dangerHint"></p>
+        <button class="btn danger" onclick="deleteAccount()" data-i18n="profile.deleteAccount"></button>
+        <div class="msgline" id="prDelMsg" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="view-admin" class="view">
+      <div class="view-head"><h2 data-i18n="admin.title"></h2><div class="sub" data-i18n="admin.sub"></div></div>
+      <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.smartTitle"></h3>
+      <div class="goals" id="smartGoals"></div>
+      <button class="btn small" onclick="exportStats()" style="margin-bottom:20px" data-i18n="admin.export"></button>
+      <div class="admin-stats" id="adminStats"></div>
+      <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.reports"></h3>
+      <div id="adminReports" style="margin-bottom:22px"></div>
+      <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.recent"></h3>
+      <div class="grid" id="adminGrid"></div>
+    </section>
+
+    <!-- ADMIN DETAIL -->
+    <section id="view-admin-detail" class="view">
+      <div class="match-page">
+        <div class="view-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div><h2 id="adminDetailTitle"></h2><div class="sub" id="adminDetailSub"></div></div>
+          <button class="btn small" onclick="showView('admin')" data-i18n="nav.admin"></button>
+        </div>
+        <div class="admin-detail-list" id="adminDetailList"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot" data-i18n="app.footer"></footer>
+</div>
+
+<div id="modalRoot"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendEmailVerification, sendPasswordResetEmail, updateProfile,
+  onAuthStateChanged, signOut, reload, deleteUser
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc,
+  deleteDoc, query, where, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
+import { hasReadableText } from "./matching.js";
+import { evaluatePassword } from "./password-policy.js";
+import { initLang, setLang, getLang, t, optionLabel, applyLang } from "./i18n.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = id => document.getElementById(id);
+const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+
+let CURRENT_UID = null, profile = null;
+let allPosts = [], allMatches = [];
+let verifyQueue = [], verifyIdx = 0;
+let currentView = 'mine';
+let booted = false;
+
+const SMART_TARGETS = { users: 50, posts: 100, accuracy: 70 };
+const CATEGORIES = ["กระเป๋า","กุญแจ","โทรศัพท์","บัตรนักศึกษา","กระเป๋าสตางค์","หูฟัง","เอกสาร","เสื้อผ้า","อื่นๆ"];
+const COLORS = ["ดำ","ขาว","แดง","น้ำเงิน","เขียว","เหลือง","ชมพู","เทา","น้ำตาล","อื่นๆ"];
+const PLACES = ["หอสมุดกลาง","คณะวิศวกรรมศาสตร์","คณะมนุษยศาสตร์","คณะบริหารธุรกิจ","คณะวิทยาศาสตร์","หอพักนักศึกษา (หอใน)","ศาลาอ่างแก้ว/โรงอาหาร","อาคาร 40 ปี","สวนสัก","ลานอ่างแก้ว","หอประชุมมหาวิทยาลัย","ตลาดข่วงเชียงใหม่ (ตลาดหน้ามอ)","จุดจอดรถ ขสมช.","สนามกีฬามหาวิทยาลัย","อื่นๆ"];
+
+/* ===================== ภาษา ===================== */
+initLang();
+function paintLangButtons(){
+  const label = getLang() === 'th' ? 'EN' : 'ไทย';
+  ['langBtnAuth','langBtnVerify','langBtnApp'].forEach(id => { if($(id)) $(id).textContent = label; });
+  if ($('prLang')) $('prLang').value = getLang();
+}
+function toggleLang(){ setLang(getLang() === 'th' ? 'en' : 'th'); }
+function setLangFromProfile(v){ setLang(v); savePrefs(); }
+
+document.addEventListener('langchange', () => {
+  paintLangButtons();
+  fillSelects();
+  if (booted) rerender();
+  if (auth.currentUser) $('verifySentTo').innerHTML = t('verify.sentTo', { email: `<b>${esc(auth.currentUser.email)}</b>` });
+});
+paintLangButtons();
+
+/* ===================== ตัวเลือกใน dropdown ===================== */
+function opts(list, kind){ return list.map(v => `<option value="${esc(v)}">${esc(optionLabel(kind, v))}</option>`).join(''); }
+function fillSelects(){
+  const keep = id => $(id) ? $(id).value : '';
+  const kCat = keep('pCategory'), kColor = keep('pColor'), kLoc = keep('pLocation');
+  const kmT = keep('mType'), kmC = keep('mCat'), kmS = keep('mStatus');
+
+  $('pCategory').innerHTML = `<option value="">${esc(t('create.categoryPick'))}</option>` + opts(CATEGORIES,'category');
+  $('pColor').innerHTML = `<option value="">${esc(t('create.colorPick'))}</option>` + opts(COLORS,'color');
+  $('pLocation').innerHTML = `<option value="">${esc(t('create.locationPick'))}</option>` + opts(PLACES,'location');
+  $('mType').innerHTML = `<option value="">${esc(t('mine.allTypes'))}</option><option value="lost">${esc(t('common.lost'))}</option><option value="found">${esc(t('common.found'))}</option>`;
+  $('mCat').innerHTML = `<option value="">${esc(t('mine.allCats'))}</option>` + opts(CATEGORIES,'category');
+  $('mStatus').innerHTML = `<option value="">${esc(t('mine.allStatus'))}</option><option value="active">${esc(t('common.active'))}</option><option value="resolved">${esc(t('common.resolved'))}</option>`;
+
+  $('pCategory').value = kCat; $('pColor').value = kColor; $('pLocation').value = kLoc;
+  $('mType').value = kmT; $('mCat').value = kmC; $('mStatus').value = kmS;
+}
+
+/* ===================== สลับหน้าจอ ===================== */
+function showScreen(which){
+  $('bootScreen').classList.toggle('hidden', which !== 'boot');
+  $('authScreen').classList.toggle('hidden', which !== 'auth');
+  $('verifyScreen').classList.toggle('hidden', which !== 'verify');
+  $('appScreen').classList.toggle('hidden', which !== 'app');
+}
+function showView(name){
+  currentView = name;
+  document.querySelectorAll('section.view').forEach(s => s.classList.remove('active'));
+  const el = $('view-' + name); if (!el) return;
+  el.classList.add('active');
+  document.querySelectorAll('nav.tabs button').forEach(b => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+  });
+  rerender();
+  window.scrollTo(0, 0);
+}
+function rerender(){
+  if (currentView === 'mine') renderMine();
+  else if (currentView === 'notif') renderNotifs();
+  else if (currentView === 'matches') renderMatches();
+  else if (currentView === 'match-detail') renderMatchDetail();
+  else if (currentView === 'post-detail') renderPostDetail();
+  else if (currentView === 'profile') fillProfileForm();
+  else if (currentView === 'admin') renderAdmin();
+  else if (currentView === 'admin-detail') renderAdminDetail();
+}
+
+/* ===================== รหัสผ่าน (แสดงเฉพาะข้อที่ยังไม่ผ่าน) ===================== */
+function toggleEye(inputId, btn){
+  const el = $(inputId);
+  const show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+  btn.setAttribute('aria-label', t(show ? 'auth.hidePassword' : 'auth.showPassword'));
+}
+
+function onPasswordInput(){
+  const p1 = $('suPass').value, p2 = $('suPass2').value;
+  const r = evaluatePassword(p1, { email: $('suEmail').value.trim(), name: $('suName').value.trim() });
+
+  const bar = $('pwBar');
+  bar.style.width = p1 ? ((r.score + 1) / 5 * 100) + '%' : '0';
+  bar.style.background = r.color;
+
+  // แสดงเฉพาะเงื่อนไขที่ยังไม่ผ่าน และเฉพาะตอนที่พิมพ์แล้วเท่านั้น
+  const missing = r.checks.filter(c => c.required && !c.pass).map(c => c.label);
+  $('pwMissing').textContent = (p1 && missing.length) ? missing.join(' · ') : '';
+
+  const msg = $('pwMatchMsg');
+  let matchOk = false;
+  if (!p2) msg.textContent = '';
+  else if (p1 !== p2) { msg.textContent = '✕ ' + t('auth.pwMismatch'); msg.style.color = 'var(--lost)'; }
+  else { msg.textContent = '✓ ' + t('auth.pwMatch'); msg.style.color = 'var(--found)'; matchOk = true; }
+
+  $('signupBtn').disabled = !(r.valid && matchOk);
+}
+
+/* ===================== Auth ===================== */
+function switchAuthTab(which){
+  const login = which === 'login';
+  $('tabLoginBtn').classList.toggle('active', login);
+  $('tabSignupBtn').classList.toggle('active', !login);
+  $('loginForm').classList.toggle('hidden', !login);
+  $('signupForm').classList.toggle('hidden', login);
+  $('authError').textContent = '';
+}
+function authErr(text, ok){
+  const el = $('authError');
+  el.style.color = ok ? 'var(--found)' : 'var(--lost)';
+  el.textContent = text;
+}
+
+async function handleSignup(e){
+  e.preventDefault(); authErr('');
+  const name = $('suName').value.trim();
+  const email = $('suEmail').value.trim().toLowerCase();
+  const p1 = $('suPass').value, p2 = $('suPass2').value;
+  if (!isAllowedEmail(email)) { authErr(t('auth.errCmuOnly')); return false; }
+  if (p1 !== p2) { authErr(t('auth.errMismatch')); return false; }
+  const r = evaluatePassword(p1, { email, name });
+  if (!r.valid) { authErr(r.checks.filter(c => c.required && !c.pass).map(c => c.label).join(' · ')); return false; }
+
+  const btn = $('signupBtn'); btn.disabled = true;
+  try{
+    const { user } = await createUserWithEmailAndPassword(auth, email, p1);
+    await updateProfile(user, { displayName: name });
+    await setDoc(doc(db,'users',user.uid), {
+      displayName: name, email, role: 'user',
+      phone: '', faculty: '', notifyEmail: true, lang: getLang(),
+      createdAt: serverTimestamp()
+    });
+    await sendEmailVerification(user, { url: ACTION_URL, handleCodeInApp: false });
+    goVerify(user);
+  }catch(err){ authErr(thaiError(err.code)); }
+  finally{ btn.disabled = false; }
+  return false;
+}
+
+async function handleLogin(e){
+  e.preventDefault(); authErr('');
+  const btn = $('loginBtn'); btn.disabled = true;
+  try{
+    const { user } = await signInWithEmailAndPassword(auth, $('loginEmail').value.trim().toLowerCase(), $('loginPass').value);
+    if (user.emailVerified) await enterApp(user); else goVerify(user);
+  }catch(err){ authErr(thaiError(err.code)); }
+  finally{ btn.disabled = false; }
+  return false;
+}
+
+async function handleForgotPassword(){
+  const email = $('loginEmail').value.trim().toLowerCase();
+  if (!email) { authErr(t('auth.needEmailFirst')); return false; }
+  try{
+    await sendPasswordResetEmail(auth, email, { url: ACTION_URL, handleCodeInApp: false });
+    authErr(t('auth.resetSent', { email }), true);
+  }catch(err){ authErr(thaiError(err.code)); }
+  return false;
+}
+
+async function handleLogout(){ await signOut(auth); location.reload(); }
+
+function goVerify(user){
+  $('verifySentTo').innerHTML = t('verify.sentTo', { email: `<b>${esc(user.email)}</b>` });
+  $('verifyMsg').textContent = '';
+  showScreen('verify');
+}
+
+async function checkEmailVerified(){
+  const msg = $('verifyMsg');
+  if (!auth.currentUser) return;
+  msg.style.color = 'var(--ink-soft)'; msg.textContent = t('common.loading');
+  await reload(auth.currentUser);
+  if (auth.currentUser.emailVerified){
+    msg.style.color = 'var(--found)'; msg.textContent = t('verify.success');
+    await enterApp(auth.currentUser);
+  } else {
+    msg.style.color = 'var(--lost)'; msg.textContent = t('verify.notYet');
+  }
+}
+
+let resendTimer = null;
+async function resendVerification(){
+  const btn = $('resendBtn'); if (btn.disabled) return;
+  const msg = $('verifyMsg');
+  try{
+    await sendEmailVerification(auth.currentUser, { url: ACTION_URL, handleCodeInApp: false });
+    msg.style.color = 'var(--found)'; msg.textContent = t('verify.resent');
+  }catch(err){ msg.style.color = 'var(--lost)'; msg.textContent = thaiError(err.code); return; }
+  let secs = 30; btn.disabled = true;
+  clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    secs--; btn.textContent = t('verify.cooldown', { secs });
+    if (secs <= 0){ clearInterval(resendTimer); btn.disabled = false; btn.textContent = t('verify.resend'); }
+  }, 1000);
+}
+
+/* ===================== เริ่มระบบ ===================== */
+onAuthStateChanged(auth, async user => {
+  if (!user){ showScreen('auth'); switchAuthTab('login'); applyLang(); paintLangButtons(); return; }
+  // เช็คกับเซิร์ฟเวอร์เฉพาะตอนที่ยังไม่ยืนยัน เพื่อไม่ให้หน้าโหลดช้าทุกครั้ง
+  if (!user.emailVerified){
+    try { await reload(user); } catch(_){}
+    if (!user.emailVerified){ goVerify(user); applyLang(); paintLangButtons(); return; }
+  }
+  await enterApp(user);
+});
+
+async function enterApp(user){
+  showScreen('boot');
+  CURRENT_UID = user.uid;
+  $('userNameChip').textContent = user.displayName || user.email;
+
+  try{
+    const s = await getDoc(doc(db,'users',user.uid));
+    profile = s.exists() ? s.data() : { role:'user', notifyEmail:true };
+  }catch(_){ profile = { role:'user', notifyEmail:true }; }
+
+  if (profile.lang && profile.lang !== getLang()) setLang(profile.lang);
+  if (profile.role === 'admin') $('adminTab').classList.remove('hidden');
+
+  fillSelects();
+  const today = new Date().toISOString().slice(0,10);
+  $('pDate').value = today; $('pDate').max = today;
+
+  await loadData();
+  booted = true;
+  showScreen('app');
+  applyLang(); paintLangButtons();
+  showView('mine');
+}
+
+async function loadData(){
+  const ps = await getDocs(query(collection(db,'posts'), where('authorId','==',CURRENT_UID)));
+  allPosts = ps.docs.map(d => ({ id:d.id, ...d.data() }))
+                    .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  const ms = await getDocs(query(collection(db,'matches'), where('participantIds','array-contains',CURRENT_UID)));
+  allMatches = ms.docs.map(d => ({ id:d.id, ...d.data() }))
+                      .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  updateBadge();
+}
+
+function updateBadge(){
+  const n = allMatches.filter(m => m.lostAuthorId === CURRENT_UID && m.matchStatus === 'waiting_for_user').length;
+  $('notifBadge').textContent = n;
+  $('notifBadge').classList.toggle('hidden', n === 0);
+}
+
+/* ดึงข้อมูลใหม่แบบเงียบ ไม่มีตัวหมุนกลางจอ และวาดใหม่เฉพาะเมื่อข้อมูลเปลี่ยนจริง */
+let refreshing = false;
+async function refreshNow(silent){
+  if (refreshing || !CURRENT_UID) return;
+  refreshing = true;
+  const btn = $('refreshBtn');
+  if (!silent && btn){ btn.disabled = true; btn.textContent = '⋯'; }
+  const before = JSON.stringify([allPosts.map(p=>p.id+p.status), allMatches.map(m=>m.id+m.matchStatus+m.contactRevealed)]);
+  try{
+    await loadData();
+    const after = JSON.stringify([allPosts.map(p=>p.id+p.status), allMatches.map(m=>m.id+m.matchStatus+m.contactRevealed)]);
+    if (before !== after && currentView !== 'match-detail') rerender();
+  }catch(err){ console.error(err); }
+  finally{
+    refreshing = false;
+    if (!silent && btn){ btn.disabled = false; btn.textContent = '↻'; }
+  }
+}
+// เช็คเบื้องหลังทุก 5 นาที ให้พอดีกับรอบทำงานของตัวจับคู่ฝั่งเซิร์ฟเวอร์
+setInterval(() => {
+  if (document.visibilityState === 'visible') refreshNow(true);
+}, 300000);
+
+/* ===================== ตัวช่วย ===================== */
+const postById = id => allPosts.find(p => p.id === id);
+function colorHex(n){
+  return {'ดำ':'#222','ขาว':'#fff','แดง':'#c0392b','น้ำเงิน':'#2c5faa','เขียว':'#2f6e5b','เหลือง':'#e0b400','ชมพู':'#e07ba0','เทา':'#8b8b8b','น้ำตาล':'#7a5230'}[n] || '#7B4FCB';
+}
+function emptyState(a, b){ return `<div class="empty"><div class="display">${esc(a)}</div><div>${esc(b)}</div></div>`; }
+function fmtDate(d){
+  if (!d) return '-';
+  const dt = new Date(d);
+  return isNaN(dt) ? esc(d) : dt.toLocaleDateString(getLang()==='th'?'th-TH':'en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+function timeAgo(c){
+  const s = Math.floor(Date.now()/1000) - (c?.seconds||0);
+  const m = Math.floor(s/60), h = Math.floor(m/60), d = Math.floor(h/24);
+  if (getLang() === 'en') return d>0?`${d} day(s) ago`:h>0?`${h} hour(s) ago`:m>0?`${m} minute(s) ago`:'just now';
+  return d>0?`${d} วันที่แล้ว`:h>0?`${h} ชั่วโมงที่แล้ว`:m>0?`${m} นาทีที่แล้ว`:'เมื่อสักครู่';
+}
+function typeLabel(ty){ return ty === 'lost' ? t('common.lost') : t('common.found'); }
+
+function cardHTML(p){
+  return `<button class="tagcard" onclick="openMyPost('${p.id}')">
+    <div class="photo">${p.thumbUrl ? `<img src="${p.thumbUrl}" loading="lazy" alt="${esc(optionLabel('category',p.category))}" onerror="this.parentElement.textContent='${esc(t('common.noImage'))}'">` : esc(t('common.noImage'))}</div>
+    <div class="body">
+      <div class="toprow">
+        <span class="cat">${esc(optionLabel('category', p.category))}</span>
+        <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
+      </div>
+      <div class="desc">${esc(p.description)}</div>
+      <div class="meta">
+        <span><span class="colordot" style="background:${colorHex(p.color)}"></span>${esc(optionLabel('color', p.color))}</span>
+        <span>📍 ${esc(optionLabel('location', p.location))}</span>
+      </div>
+    </div>
+    ${p.status === 'resolved' ? `<div class="status-strip">✓ ${esc(t('common.resolved'))}</div>` : ''}
+  </button>`;
+}
+
+/* ===================== ประกาศของฉัน ===================== */
+function renderMine(){
+  const ty = $('mType').value, ca = $('mCat').value, st = $('mStatus').value;
+  const q = $('mQ').value.trim().toLowerCase();
+  const list = allPosts.filter(p =>
+    (!ty || p.type === ty) && (!ca || p.category === ca) && (!st || p.status === st) &&
+    (!q || ((p.description||'') + ' ' + (p.category||'') + ' ' + (p.location||'')).toLowerCase().includes(q)));
+
+  $('mineCount').textContent = allPosts.length ? t('mine.count', { n:list.length, total:allPosts.length }) : '';
+  $('mineGrid').innerHTML = allPosts.length === 0
+    ? emptyState(t('mine.emptyTitle'), t('mine.emptySub'))
+    : (list.length ? list.map(cardHTML).join('') : emptyState(t('mine.noResultTitle'), t('mine.noResultSub')));
+}
+
+let detailPostId = null;
+function openMyPost(id){ detailPostId = id; showView('post-detail'); }
+
+function renderPostDetail(){
+  const p = postById(detailPostId);
+  const root = $('postDetailContent');
+  if (!p){ root.innerHTML = emptyState(t('detail.notFound'), t('detail.maybeDeleted')); return; }
+
+  const rel = p.type === 'lost' ? allMatches.filter(m => m.lostPostId === p.id)
+                                : allMatches.filter(m => m.foundPostId === p.id);
+  const waiting = rel.filter(m => m.matchStatus === 'waiting_for_user').length;
+  const accepted = rel.find(m => ['awaiting_finder','accepted','declined'].includes(m.matchStatus));
+
+  let block = '';
+  if (accepted) block = contactBlock(accepted, p);
+  else if (waiting) block = `<div class="notif unread" style="margin-top:14px">
+      <div class="txt">✨ ${esc(t('detail.matchFound',{n:waiting}))}</div>
+      <button class="btn small accent" onclick="openMatchPage('${p.id}')">${esc(t('detail.checkNow'))}</button></div>`;
+
+  root.innerHTML = `<div class="match-item-card" style="max-width:640px;margin:0 auto">
+    <div class="match-photo" style="height:280px" id="detailPhoto">${p.thumbUrl ? `<img src="${p.thumbUrl}" alt="${esc(optionLabel('category',p.category))}" style="filter:blur(1px)">` : esc(t('common.noImage'))}</div>
+    <div class="match-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
+        ${p.status === 'resolved' ? `<span class="stamp found">✓ ${esc(t('common.resolved'))}</span>` : ''}
+      </div>
+      <h3 style="font-size:21px;margin:12px 0 4px">${esc(optionLabel('category', p.category))}</h3>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px">
+        <span class="colordot" style="background:${colorHex(p.color)}"></span>${esc(optionLabel('color', p.color))}
+      </div>
+      <div class="match-desc" style="min-height:auto;font-size:14px">${esc(p.description)}</div>
+      <div class="note-box">
+        <div>📍 <b>${esc(t('detail.location'))}:</b> ${esc(optionLabel('location', p.location))}</div>
+        <div>📅 <b>${esc(t('detail.date'))}:</b> ${fmtDate(p.eventDate)}</div>
+        <div>🕒 <b>${esc(t('detail.posted'))}:</b> ${esc(timeAgo(p.createdAt))}</div>
+      </div>
+      ${block}
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+        ${p.status !== 'resolved' ? `<button class="btn small accent" onclick="markResolved('${p.id}')">✓ ${esc(t('detail.markResolved'))}</button>` : ''}
+        <button class="btn small danger" onclick="deleteMyPost('${p.id}')">${esc(t('common.delete'))}</button>
+      </div>
+    </div></div>`;
+  if (p.hasImage) loadFullImage(p.id);
+}
+
+/* รูปเต็มโหลดตอนเปิดรายละเอียดเท่านั้น หน้ารายการใช้รูปย่อ */
+const fullImageCache = new Map();
+async function loadFullImage(postId){
+  const box = $('detailPhoto');
+  if (!box) return;
+  try{
+    let data = fullImageCache.get(postId);
+    if (!data){
+      const snap = await getDoc(doc(db,'postImages',postId));
+      if (!snap.exists()) return;
+      data = snap.data().data;
+      fullImageCache.set(postId, data);
+    }
+    const img = box.querySelector('img');
+    if (img){ img.src = data; img.style.filter = 'none'; }
+  }catch(err){ console.warn('โหลดรูปเต็มไม่ได้:', err.message); }
+}
+
+async function markResolved(id){
+  if (!confirm(t('detail.resolveConfirm'))) return;
+  await updateDoc(doc(db,'posts',id), { status:'resolved' });
+  const p = postById(id); if (p) p.status = 'resolved';
+  rerender();
+}
+async function deleteMyPost(id){
+  if (!confirm(t('detail.deleteConfirm'))) return;
+  await deleteDoc(doc(db,'posts',id));
+  try{ await deleteDoc(doc(db,'postImages',id)); }catch(_){}
+  allPosts = allPosts.filter(p => p.id !== id);
+  showView('mine');
+}
+
+/* ===================== ลงประกาศ ===================== */
+function toggleOther(base){
+  const sel = $(base), other = $(base + 'Other');
+  const show = sel.value === 'อื่นๆ';
+  other.classList.toggle('hidden', !show);
+  other.required = show;
+  if (show) other.focus(); else other.value = '';
+}
+function fieldValue(base){
+  const sel = $(base);
+  return sel.value === 'อื่นๆ' ? $(base + 'Other').value.trim() : sel.value;
+}
+
+let imageData = '';   // รูปเต็ม เก็บแยกที่คอลเลกชัน postImages
+let thumbData = '';   // รูปย่อ ฝังในเอกสารประกาศ ใช้ในหน้ารายการและหน้าจับคู่
+const ALLOWED_IMAGE = ['image/jpeg','image/png','image/webp','image/gif'];
+function clearImage(text){
+  imageData = ''; thumbData = '';
+  $('imagePreview').style.display = 'none';
+  $('imagePreviewImg').removeAttribute('src');
+  $('pImage').value = '';
+  const m = $('imageMsg'); m.style.color = 'var(--lost)'; m.textContent = text || '';
+}
+function previewPostImage(e){
+  const f = e.target.files?.[0], m = $('imageMsg');
+  m.textContent = '';
+  if (!f) return clearImage('');
+  const extOk = /\.(jpe?g|png|webp|gif)$/i.test(f.name);
+  if (!ALLOWED_IMAGE.includes(f.type) || !extOk){
+    return clearImage(t('create.imgBad', { ext: (f.name.split('.').pop()||'').toUpperCase() }));
+  }
+  if (f.size > 10*1024*1024) return clearImage(t('create.imgBig', { mb:(f.size/1048576).toFixed(1) }));
+  m.style.color = 'var(--ink-soft)'; m.textContent = t('create.imgShrink');
+  Promise.all([shrinkImage(f, 800, 700000), shrinkImage(f, 240, 55000)]).then(([full, thumb]) => {
+    imageData = full; thumbData = thumb;
+    $('imagePreviewImg').src = thumb;
+    $('imagePreviewImg').alt = '';
+    $('imagePreview').style.display = 'block';
+    m.style.color = 'var(--found)'; m.textContent = t('create.imgReady', { kb:(full.length/1024).toFixed(0) });
+  }).catch(() => clearImage(t('create.imgFail')));
+}
+function shrinkImage(file, maxSide = 800, budget = 700000){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const sc = Math.min(1, maxSide / Math.max(im.width, im.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(im.width*sc); cv.height = Math.round(im.height*sc);
+        cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+        let q = 0.7, out = cv.toDataURL('image/jpeg', q);
+        while (out.length > budget && q > 0.25){ q -= 0.1; out = cv.toDataURL('image/jpeg', q); }
+        res(out);
+      };
+      im.onerror = rej; im.src = r.result;
+    };
+    r.onerror = rej; r.readAsDataURL(file);
+  });
+}
+
+const DAILY_POST_LIMIT = 5;
+const ACTIVE_POST_LIMIT = 15;
+
+async function handleCreatePost(e){
+  e.preventDefault();
+  const btn = $('postSubmitBtn'), msg = $('postMsg');
+  msg.textContent = '';
+
+  // กันการลงประกาศรัวจนเปลืองโควตาฐานข้อมูลและทำให้ตัวเลขวัดผลเพี้ยน
+  const today = new Date().toISOString().slice(0,10);
+  const usedToday = profile?.postCountDate === today ? (profile?.postCountToday || 0) : 0;
+  if (usedToday >= DAILY_POST_LIMIT){
+    msg.style.color = 'var(--lost)';
+    msg.textContent = t('limit.title') + ' — ' + t('limit.body', { n: DAILY_POST_LIMIT });
+    return false;
+  }
+  const openPosts = allPosts.filter(p => p.status === 'active').length;
+  if (openPosts >= ACTIVE_POST_LIMIT){
+    msg.style.color = 'var(--lost)';
+    msg.textContent = t('limit.active', { n: openPosts });
+    return false;
+  }
+
+  const category = fieldValue('pCategory'), color = fieldValue('pColor'), location = fieldValue('pLocation');
+  if (!category || !color || !location){
+    msg.style.color = 'var(--lost)'; msg.textContent = t('create.otherRequired'); return false;
+  }
+
+  const desc = $('pDesc').value.trim();
+  let autoCategorized = false, finalCategory = category;
+  if (!hasReadableText(desc)){ finalCategory = 'อื่นๆ'; autoCategorized = true; }
+
+  btn.disabled = true; btn.textContent = t('common.saving');
+  const data = {
+    authorId: CURRENT_UID,
+    authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+    authorEmail: auth.currentUser.email,
+    type: document.querySelector('input[name=ptype]:checked').value,
+    category: finalCategory, color, description: desc, location,
+    eventDate: $('pDate').value,
+    thumbUrl: thumbData || '',
+    hasImage: !!imageData,
+    status: 'active',
+    autoCategorized,
+    processed: autoCategorized,
+    createdAt: serverTimestamp()
+  };
+
+  try{
+    const ref = await addDoc(collection(db,'posts'), data);
+    // รูปเต็มเก็บแยก เพื่อไม่ให้หน้ารายการต้องดาวน์โหลดรูปทุกใบทุกครั้ง
+    if (imageData){
+      try{ await setDoc(doc(db,'postImages',ref.id), { authorId: CURRENT_UID, data: imageData }); }
+      catch(err){ console.warn('บันทึกรูปเต็มไม่สำเร็จ:', err.message); }
+    }
+    try{
+      await updateDoc(doc(db,'users',CURRENT_UID), { postCountDate: today, postCountToday: usedToday + 1 });
+      profile = { ...profile, postCountDate: today, postCountToday: usedToday + 1 };
+    }catch(err){ console.warn(err.message); }
+    allPosts.unshift({ id:ref.id, ...data, createdAt:{ seconds: Math.floor(Date.now()/1000) } });
+    $('postForm').reset();
+    ['pCategory','pColor','pLocation'].forEach(id => { $(id+'Other').classList.add('hidden'); $(id+'Other').required=false; });
+    clearImage('');
+    $('pDate').value = new Date().toISOString().slice(0,10);
+    msg.style.color = autoCategorized ? 'var(--amber)' : 'var(--found)';
+    msg.textContent = t(autoCategorized ? 'create.okAuto' : 'create.ok');
+    setTimeout(() => showView('mine'), 1200);
+  }catch(err){
+    msg.style.color = 'var(--lost)'; msg.textContent = t('create.fail', { msg: err.message });
+  }finally{
+    btn.disabled = false; btn.textContent = t('create.submit');
+  }
+  return false;
+}
+
+/* ===================== แจ้งเตือน ===================== */
+function renderNotifs(){
+  updateBadge();
+  if (!allMatches.length){
+    $('notifList').innerHTML = emptyState(t('notif.emptyTitle'), t('notif.emptySub')); return;
+  }
+  $('notifList').innerHTML = allMatches.map(m => {
+    const owner = m.lostAuthorId === CURRENT_UID;
+    const pct = Math.round((m.similarityScore||0)*100);
+    let txt = '', cta = '';
+    if (m.matchStatus === 'waiting_for_user' && owner){
+      txt = t('notif.foundMatch', { pct, rank:m.matchRank });
+      cta = `<button class="btn small accent" onclick="openMatchPage('${m.lostPostId}')">${esc(t('detail.checkNow'))}</button>`;
+    } else if (m.matchStatus === 'awaiting_finder'){
+      txt = t(owner ? 'consent.ownerDone' : 'consent.askFinder');
+      cta = `<button class="btn small accent" onclick="showView('matches')">${esc(t('notif.goSee'))}</button>`;
+    } else if (m.matchStatus === 'declined'){
+      txt = t(owner ? 'consent.declinedOwner' : 'consent.declined');
+    } else if (m.matchStatus === 'accepted'){
+      txt = t(owner ? 'notif.accepted' : 'notif.acceptedOther');
+      cta = `<button class="btn small accent" onclick="showView('matches')">${esc(t('notif.goSee'))}</button>`;
+    } else if (m.matchStatus === 'rejected'){
+      txt = t('notif.rejected', { rank:m.matchRank });
+    } else {
+      txt = t('notif.waiting');
+    }
+    return `<div class="notif ${m.matchStatus==='waiting_for_user'?'unread':''}">
+      <div class="txt">${esc(txt)}</div><div>${cta}</div></div>`;
+  }).join('');
+}
+
+/* ===================== จับคู่ ===================== */
+function contactBlock(m, myPost){
+  const iAmFinder = m.foundAuthorId === CURRENT_UID;
+
+  if (m.matchStatus === 'declined'){
+    return `<div class="pending-note">${esc(t(iAmFinder ? 'consent.declined' : 'consent.declinedOwner'))}</div>`;
+  }
+  if (m.matchStatus === 'awaiting_finder'){
+    if (iAmFinder){
+      return `<div class="pending-note">${esc(t('consent.askFinder'))}
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn small accent" onclick="finderDecision('${m.id}',true)">${esc(t('consent.allow'))}</button>
+          <button class="btn small" onclick="finderDecision('${m.id}',false)">${esc(t('consent.decline'))}</button>
+        </div></div>`;
+    }
+    return `<div class="pending-note">${esc(t('consent.ownerDone'))}</div>`;
+  }
+  if (!m.contactRevealed){
+    return `<div class="pending-note">${esc(t('match.revealPending'))}</div>`;
+  }
+  const iAmLost = m.lostAuthorId === CURRENT_UID;
+  const them = iAmLost ? m.foundContact : m.lostContact;
+  const resolved = myPost && myPost.status === 'resolved';
+  return `<div class="contactreveal">✓ ${esc(t('match.confirmed', { name: them?.name || '-', email: them?.email || '-' }))}
+    ${resolved ? `<div style="margin-top:6px">✓ ${esc(t('match.closed'))}</div>`
+      : (myPost ? `<div style="margin-top:8px"><button class="btn small accent" onclick="markResolved('${myPost.id}')">✓ ${esc(t('match.markReturned'))}</button></div>` : '')}
+  </div>`;
+}
+
+function renderMatches(){
+  const groups = allPosts.filter(p =>
+    allMatches.some(m => (m.lostPostId === p.id || m.foundPostId === p.id) &&
+      (p.type === 'lost' || ['awaiting_finder','accepted','declined'].includes(m.matchStatus))));
+
+  const html = groups.map(p => {
+    const rel = p.type === 'lost'
+      ? allMatches.filter(m => m.lostPostId === p.id)
+      : allMatches.filter(m => m.foundPostId === p.id && ['awaiting_finder','accepted','declined'].includes(m.matchStatus));
+    if (!rel.length) return '';
+    const waiting = rel.filter(m => m.matchStatus === 'waiting_for_user').length;
+    const accepted = rel.find(m => ['awaiting_finder','accepted','declined'].includes(m.matchStatus));
+    return `<div class="notif" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+        <div class="txt"><span class="stamp ${p.type}" style="margin-right:6px">${esc(typeLabel(p.type))}</span>
+          <b>${esc(optionLabel('category',p.category))}</b> (${esc(optionLabel('color',p.color))}) — ${esc((p.description||'').slice(0,55))}${(p.description||'').length>55?'…':''}</div>
+        ${waiting ? `<button class="btn small accent" onclick="openMatchPage('${p.id}')">✨ ${esc(t('match.seeMatch',{n:waiting}))}</button>` : ''}
+      </div>
+      ${accepted ? contactBlock(accepted, p) : ''}
+    </div>`;
+  }).join('');
+
+  $('matchesOverview').innerHTML = html || emptyState(t('match.emptyTitle'), t('match.emptySub'));
+}
+
+function openMatchPage(lostPostId){
+  verifyQueue = allMatches.filter(m => m.lostPostId === lostPostId && m.matchStatus === 'waiting_for_user')
+                          .sort((a,b) => a.matchRank - b.matchRank);
+  verifyIdx = 0;
+  showView('match-detail');
+}
+
+function snapCard(label, snap, cls){
+  return `<div class="match-item-card">
+    <div class="match-photo">${snap.thumbUrl ? `<img src="${snap.thumbUrl}" alt="${esc(optionLabel('category',snap.category))}" onerror="this.parentElement.textContent='${esc(t('common.noImage'))}'">` : esc(t('common.noImage'))}</div>
+    <div class="match-body">
+      <span class="stamp ${cls}">${esc(label)}</span>
+      <h3>${esc(optionLabel('category',snap.category))} · ${esc(optionLabel('color',snap.color))}</h3>
+      <div class="match-desc">${esc(snap.description)}</div>
+      <div style="font-size:12px;color:var(--ink-soft)">📍 ${esc(optionLabel('location',snap.location))} · ${fmtDate(snap.eventDate)}</div>
+    </div></div>`;
+}
+
+function renderMatchDetail(){
+  const root = $('matchDetailContent');
+  if (verifyIdx >= verifyQueue.length){
+    root.innerHTML = `<div class="notif" style="display:block;text-align:center;padding:46px 20px">
+      <div class="display" style="font-size:20px">${esc(t('match.allDone'))}</div>
+      <p style="color:var(--ink-soft);font-size:13px">${esc(t('match.allDoneSub'))}</p>
+      <button class="btn primary" onclick="showView('matches')">${esc(t('match.backToList'))}</button></div>`;
+    return;
+  }
+  const m = verifyQueue[verifyIdx];
+  root.innerHTML = `<div class="progress-line">${esc(t('match.progress',{ i:verifyIdx+1, n:verifyQueue.length, rank:m.matchRank }))}</div>
+    <div class="match-comparison">
+      ${snapCard(t('match.yourItem'), m.lostSnap || {}, 'lost')}
+      ${snapCard(t('match.systemFound'), m.foundSnap || {}, 'found')}
+    </div>
+    <div class="match-score-box">
+      <div class="score-big">${Math.round((m.similarityScore||0)*100)}%</div>
+      <div class="score-label">${esc(t('match.scoreLabel'))}</div>
+      <ul class="match-reasons">${(m.reasons||[]).map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+    </div>
+    <div class="match-actions">
+      <button class="btn danger" onclick="matchDecision(false)">✕ ${esc(t('match.notMine'))}</button>
+      <button class="btn primary" onclick="matchDecision(true)">✓ ${esc(t('match.isMine'))}</button>
+    </div>
+    <div class="note-box">${esc(t('match.howTo'))}</div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn small" onclick="openReport('${m.foundPostId}')">${esc(t('report.button'))}</button>
+    </div>`;
+}
+
+async function matchDecision(isMatch){
+  const m = verifyQueue[verifyIdx]; if (!m) return;
+  // เจ้าของของหายยืนยันแล้วยังไม่เปิดเผยอีเมลทันที ต้องรอผู้เก็บของได้ยินยอมก่อน
+  const status = isMatch ? 'awaiting_finder' : 'rejected';
+  await updateDoc(doc(db,'matches',m.id), { matchStatus: status });
+  m.matchStatus = status;
+  if (isMatch){
+    for (const o of allMatches.filter(x => x.lostPostId === m.lostPostId && x.id !== m.id && x.matchStatus === 'waiting_for_user')){
+      await updateDoc(doc(db,'matches',o.id), { matchStatus:'rejected' });
+      o.matchStatus = 'rejected';
+    }
+    updateBadge(); showView('matches'); return;
+  }
+  verifyIdx++; updateBadge(); renderMatchDetail();
+}
+
+async function finderDecision(matchId, allow){
+  const m = allMatches.find(x => x.id === matchId); if (!m) return;
+  const status = allow ? 'accepted' : 'declined';
+  await updateDoc(doc(db,'matches',matchId), { matchStatus: status });
+  m.matchStatus = status;
+  rerender();
+}
+
+/* ===================== รายงานเนื้อหาไม่เหมาะสม ===================== */
+function openReport(postId){
+  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="this.remove()">
+    <div class="modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <h3 style="margin:0 0 6px;font-size:17px">${esc(t('report.title'))}</h3>
+      <div class="field" style="margin-top:14px">
+        <label for="rpReason">${esc(t('report.reason'))}</label>
+        <textarea id="rpReason" rows="3" placeholder="${esc(t('report.reasonPh'))}"></textarea>
+      </div>
+      <div class="msgline" id="rpMsg" role="status" aria-live="polite"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn primary" onclick="sendReport('${postId}')">${esc(t('report.send'))}</button>
+        <button class="btn" onclick="this.closest('.modal-bg').remove()">${esc(t('common.cancel'))}</button>
+      </div>
+    </div></div>`;
+}
+
+async function sendReport(postId){
+  const reason = $('rpReason').value.trim();
+  const msg = $('rpMsg');
+  if (!reason){ msg.style.color='var(--lost)'; msg.textContent = t('report.needReason'); return; }
+  try{
+    await addDoc(collection(db,'reports'), {
+      postId, reporterId: CURRENT_UID, reporterEmail: auth.currentUser.email,
+      reason, status: 'open', createdAt: serverTimestamp()
+    });
+    msg.style.color='var(--found)'; msg.textContent = t('report.sent');
+    setTimeout(() => document.querySelector('.modal-bg')?.remove(), 1500);
+  }catch(err){ msg.style.color='var(--lost)'; msg.textContent = err.message; }
+}
+
+/* ===================== โปรไฟล์ ===================== */
+function fillProfileForm(){
+  $('prName').value = profile?.displayName || auth.currentUser?.displayName || '';
+  $('prEmail').value = auth.currentUser?.email || '';
+  $('prPhone').value = profile?.phone || '';
+  $('prFaculty').value = profile?.faculty || '';
+  $('prNotify').checked = profile?.notifyEmail !== false;
+  $('prLang').value = getLang();
+}
+
+async function saveProfile(){
+  const msg = $('prMsg'), btn = $('prSaveBtn');
+  const name = $('prName').value.trim();
+  if (!name){ msg.style.color='var(--lost)'; msg.textContent = t('common.required'); return; }
+  btn.disabled = true;
+  try{
+    await updateDoc(doc(db,'users',CURRENT_UID), {
+      displayName: name,
+      phone: $('prPhone').value.trim(),
+      faculty: $('prFaculty').value.trim()
+    });
+    await updateProfile(auth.currentUser, { displayName: name });
+    profile = { ...profile, displayName:name, phone:$('prPhone').value.trim(), faculty:$('prFaculty').value.trim() };
+    $('userNameChip').textContent = name;
+    msg.style.color='var(--found)'; msg.textContent = t('profile.saved');
+  }catch(err){ msg.style.color='var(--lost)'; msg.textContent = t('profile.saveFail',{msg:err.message}); }
+  finally{ btn.disabled = false; }
+}
+
+async function savePrefs(){
+  try{
+    await updateDoc(doc(db,'users',CURRENT_UID), { notifyEmail: $('prNotify').checked, lang: getLang() });
+    profile = { ...profile, notifyEmail: $('prNotify').checked, lang: getLang() };
+  }catch(err){ console.warn(err); }
+}
+
+async function sendResetFromProfile(){
+  const msg = $('prPwMsg');
+  try{
+    await sendPasswordResetEmail(auth, auth.currentUser.email, { url: ACTION_URL, handleCodeInApp:false });
+    msg.style.color='var(--found)'; msg.textContent = t('profile.resetSent');
+  }catch(err){ msg.style.color='var(--lost)'; msg.textContent = thaiError(err.code); }
+}
+
+async function deleteAccount(){
+  if (!confirm(t('profile.deleteConfirm'))) return;
+  const msg = $('prDelMsg');
+  try{
+    for (const p of allPosts) await deleteDoc(doc(db,'posts',p.id));
+    await deleteDoc(doc(db,'users',CURRENT_UID));
+    await deleteUser(auth.currentUser);
+    location.reload();
+  }catch(err){
+    msg.style.color='var(--lost)';
+    msg.textContent = err.code === 'auth/requires-recent-login' ? t('profile.deleteRelogin') : thaiError(err.code);
+  }
+}
+
+/* ===================== แอดมิน ===================== */
+let adminPosts = [], adminCat = 'all', statsCache = null;
+
+function accuracyFrom(list){
+  const judged = list.filter(m => m.matchStatus === 'accepted' || m.matchStatus === 'rejected');
+  const accepted = judged.filter(m => m.matchStatus === 'accepted');
+  return { judged: judged.length, accepted: accepted.length,
+           pct: judged.length ? Math.round(accepted.length / judged.length * 100) : null };
+}
+function goalCard(val, target, unit, label, note){
+  const pctRaw = target ? (val / target * 100) : 0;
+  const pct = Math.min(100, Math.round(pctRaw));
+  return `<div class="goal">
+    <div class="big">${val}${esc(unit)} <small>/ ${target}${esc(unit)}</small></div>
+    <div class="lbl">${esc(label)}</div>
+    <div class="track"><i class="${pct>=100?'done':''}" style="width:${pct}%"></i></div>
+    <div class="note">${pct}%${note?' · '+esc(note):''}</div></div>`;
+}
+
+async function renderAdmin(){
+  let posts = allPosts, matches = allMatches, users = 0;
+  try{
+    const ps = await getDocs(collection(db,'posts'));
+    posts = ps.docs.map(d => ({ id:d.id, ...d.data() }));
+  }catch(e){ console.warn(e.message); }
+  try{
+    const ms = await getDocs(collection(db,'matches'));
+    matches = ms.docs.map(d => ({ id:d.id, ...d.data() }));
+  }catch(e){ console.warn(e.message); }
+  try{ users = (await getDocs(collection(db,'users'))).size; }catch(e){ console.warn(e.message); }
+
+  let reports = [];
+  try{
+    const rs = await getDocs(query(collection(db,'reports'), where('status','==','open')));
+    reports = rs.docs.map(d => ({ id:d.id, ...d.data() }));
+  }catch(e){ console.warn(e.message); }
+  renderReports(reports, posts);
+
+  adminPosts = posts;
+  const lost = posts.filter(p=>p.type==='lost').length;
+  const found = posts.filter(p=>p.type==='found').length;
+  const resolved = posts.filter(p=>p.status==='resolved').length;
+  const acc = accuracyFrom(matches);
+
+  statsCache = { users, total:posts.length, lost, found, resolved,
+                 matchesTotal:matches.length, judged:acc.judged, accepted:acc.accepted, accuracy:acc.pct };
+
+  $('smartGoals').innerHTML =
+    goalCard(users, SMART_TARGETS.users, '', t('admin.users'), '') +
+    goalCard(posts.length, SMART_TARGETS.posts, '', t('admin.posts'), '') +
+    goalCard(acc.pct ?? 0, SMART_TARGETS.accuracy, '%', t('admin.accuracy'),
+      acc.judged ? t('admin.accuracyFrom',{n:acc.judged}) : t('admin.accuracyNone'));
+
+  const cards = [
+    ['all', t('admin.allPosts'), posts.length],
+    ['lost', t('common.lost'), lost],
+    ['found', t('common.found'), found],
+    ['resolved', t('admin.returned'), resolved],
+    ['accepted', t('admin.matched'), acc.accepted]
+  ];
+  $('adminStats').innerHTML = cards.map(([k,l,v]) =>
+    `<button class="admin-stat" onclick="openAdminCat('${k}')"><div class="num">${v}</div><div class="label">${esc(l)}</div></button>`).join('');
+
+  $('adminGrid').innerHTML = posts.slice(0,24).map(p => adminCardHTML(p)).join('') || emptyState(t('admin.noData'),'');
+}
+
+function renderReports(reports, posts){
+  const box = $('adminReports');
+  if (!reports.length){ box.innerHTML = `<p class="sub">${esc(t('admin.noReports'))}</p>`; return; }
+  box.innerHTML = reports.map(r => {
+    const p = posts.find(x => x.id === r.postId);
+    return `<div class="notif" style="flex-direction:column;align-items:stretch;border-left:3px solid var(--lost)">
+      <div class="txt"><b>${esc(r.reason)}</b></div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">
+        ${p ? esc(optionLabel('category',p.category)) + ' · ' + esc((p.description||'').slice(0,80)) : esc(t('detail.notFound'))}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        ${p ? `<button class="btn small" onclick="openAdminPost('${p.id}')">${esc(t('detail.title'))}</button>
+               <button class="btn small" onclick="adminHidePost('${p.id}')">${esc(t('admin.hidePost'))}</button>
+               <button class="btn small danger" onclick="adminDeletePost('${p.id}')">${esc(t('admin.deletePost'))}</button>` : ''}
+        <button class="btn small accent" onclick="markReportHandled('${r.id}')">${esc(t('admin.markHandled'))}</button>
+      </div></div>`;
+  }).join('');
+}
+
+async function adminHidePost(id){
+  if (!confirm(t('admin.confirmHide'))) return;
+  await updateDoc(doc(db,'posts',id), { status:'resolved', hiddenReason:'admin', hiddenAt: serverTimestamp() });
+  renderAdmin();
+}
+async function adminDeletePost(id){
+  if (!confirm(t('admin.confirmDelete'))) return;
+  await deleteDoc(doc(db,'posts',id));
+  try{ await deleteDoc(doc(db,'postImages',id)); }catch(_){}
+  renderAdmin();
+}
+async function markReportHandled(id){
+  await updateDoc(doc(db,'reports',id), { status:'handled', handledAt: serverTimestamp() });
+  renderAdmin();
+}
+
+function adminCardHTML(p){
+  return `<button class="tagcard" onclick="openAdminPost('${p.id}')">
+    <div class="photo">${p.thumbUrl?`<img src="${p.thumbUrl}" loading="lazy" alt="" onerror="this.parentElement.textContent='-'">`:esc(t('common.noImage'))}</div>
+    <div class="body">
+      <div class="toprow"><span class="cat">${esc(optionLabel('category',p.category))}</span>
+      <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span></div>
+      <div class="desc">${esc(p.description)}</div>
+      <div class="meta"><span>${esc(optionLabel('color',p.color))}</span><span>${esc(p.authorName||'-')}</span></div>
+    </div></button>`;
+}
+
+function openAdminCat(k){ adminCat = k; showView('admin-detail'); }
+
+function renderAdminDetail(){
+  const labels = { all:t('admin.allPosts'), lost:t('common.lost'), found:t('common.found'),
+                   resolved:t('admin.returned'), accepted:t('admin.matched') };
+  let list = adminPosts;
+  if (adminCat === 'lost') list = adminPosts.filter(p=>p.type==='lost');
+  else if (adminCat === 'found') list = adminPosts.filter(p=>p.type==='found');
+  else if (adminCat === 'resolved' || adminCat === 'accepted') list = adminPosts.filter(p=>p.status==='resolved');
+
+  $('adminDetailTitle').textContent = labels[adminCat] || '';
+  $('adminDetailSub').textContent = t('admin.itemCount', { n:list.length });
+  $('adminDetailList').innerHTML = list.map(p => `
+    <button class="admin-post-row" onclick="openAdminPost('${p.id}')">
+      <div class="thumb">${p.thumbUrl?`<img src="${p.thumbUrl}" loading="lazy" alt="">`:esc(t('common.noImage'))}</div>
+      <div class="info">
+        <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
+        <h3>${esc(optionLabel('category',p.category))} · ${esc(optionLabel('color',p.color))}</h3>
+        <p>${esc(p.description)}</p>
+        <p>📍 ${esc(optionLabel('location',p.location))}</p>
+        <p>${esc(t('admin.poster'))}: ${esc(p.authorName||'-')}</p>
+        <p><b>${esc(p.status==='resolved'?t('common.resolved'):t('admin.inProgress'))}</b></p>
+      </div></button>`).join('') || emptyState(t('admin.noData'),'');
+}
+
+function openAdminPost(id){
+  const p = adminPosts.find(x => x.id === id) || postById(id);
+  if (!p) return;
+  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="this.remove()">
+    <div class="modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <button class="btn small" onclick="this.closest('.modal-bg').remove()">${esc(t('common.close'))}</button>
+      ${p.thumbUrl?`<img src="${p.thumbUrl}" alt="" style="width:100%;max-height:300px;object-fit:cover;border-radius:14px;margin:14px 0">`:''}
+      <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
+      <h2 style="margin:10px 0 6px;font-size:19px">${esc(optionLabel('category',p.category))} · ${esc(optionLabel('color',p.color))}</h2>
+      <p style="font-size:13.5px">${esc(p.description)}</p>
+      <p style="font-size:13px"><b>${esc(t('detail.location'))}:</b> ${esc(optionLabel('location',p.location))}</p>
+      <p style="font-size:13px"><b>${esc(t('detail.date'))}:</b> ${fmtDate(p.eventDate)}</p>
+      <p style="font-size:13px"><b>${esc(t('admin.poster'))}:</b> ${esc(p.authorName||'-')} (${esc(p.authorEmail||'-')})</p>
+      ${p.hiddenReason ? `<p style="font-size:12px;color:var(--lost)">${esc(t('admin.hidden'))}</p>` : ''}
+      ${profile?.role === 'admin' ? `<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn small" onclick="adminHidePost('${p.id}')">${esc(t('admin.hidePost'))}</button>
+        <button class="btn small danger" onclick="adminDeletePost('${p.id}')">${esc(t('admin.deletePost'))}</button>
+      </div>` : ''}
+    </div></div>`;
+}
+
+function exportStats(){
+  if (!statsCache) return;
+  const d = statsCache;
+  const rows = [
+    ['Metric','Value','SMART Target'],
+    ['Registered users', d.users, SMART_TARGETS.users],
+    ['Total posts', d.total, SMART_TARGETS.posts],
+    ['Lost posts', d.lost, '-'],
+    ['Found posts', d.found, '-'],
+    ['Resolved cases', d.resolved, '-'],
+    ['Matches proposed', d.matchesTotal, '-'],
+    ['Matches judged by users', d.judged, '-'],
+    ['Matches confirmed correct', d.accepted, '-'],
+    ['Matching accuracy (%)', d.accuracy ?? 'n/a', SMART_TARGETS.accuracy],
+    ['Exported at', new Date().toISOString(), '-']
+  ];
+  const csv = '\uFEFF' + rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+  a.download = `cmu-lost-found-stats-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+/* ===================== เปิดให้ HTML เรียกใช้ ===================== */
+Object.assign(window, {
+  toggleLang, setLangFromProfile, toggleEye, onPasswordInput,
+  switchAuthTab, handleLogin, handleSignup, handleForgotPassword, handleLogout,
+  checkEmailVerified, resendVerification,
+  showView, refreshNow, renderMine, openMyPost, markResolved, deleteMyPost,
+  toggleOther, previewPostImage, handleCreatePost,
+  openMatchPage, matchDecision,
+  saveProfile, savePrefs, sendResetFromProfile, deleteAccount,
+  openAdminCat, openAdminPost, exportStats,
+  finderDecision, openReport, sendReport, adminHidePost, adminDeletePost, markReportHandled
+});
+
+applyLang();
+</script>
+</body>
+</html>
