@@ -17,7 +17,7 @@
    =================================================================== */
 
 import admin from "firebase-admin";
-import { findMatches, passesHardFilter, cosineSimilarity } from "./matching.js";
+import { findMatches, passesHardFilter, cosineSimilarity } from "../matching.js";
 
 /* ---------- ตั้งค่าจาก GitHub Secrets ---------- */
 const {
@@ -68,6 +68,23 @@ async function sendEmail({ to, toName, subject, html }) {
   }
   console.log("ส่งอีเมลแล้ว →", to);
   return true;
+}
+
+/* เคารพการตั้งค่าของผู้ใช้ — ถ้าปิดการแจ้งเตือนทางอีเมลไว้ในหน้าโปรไฟล์ จะไม่ส่ง */
+const prefCache = new Map();
+async function wantsEmail(uid) {
+  if (!uid) return true;
+  if (prefCache.has(uid)) return prefCache.get(uid);
+  let ok = true;
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    if (snap.exists && snap.data().notifyEmail === false) ok = false;
+  } catch (err) {
+    console.warn("[prefs] อ่านการตั้งค่าผู้ใช้ไม่ได้:", err.message);
+  }
+  prefCache.set(uid, ok);
+  if (!ok) console.log(`[prefs] ${uid} ปิดการแจ้งเตือนทางอีเมลไว้ — ข้าม`);
+  return ok;
 }
 
 /* ---------- เทมเพลตอีเมล (โทนสีเดียวกับเว็บ) ---------- */
@@ -180,9 +197,30 @@ const snapOf = p => ({
   description: p.description || "",
   location: p.location || "",
   eventDate: p.eventDate || "",
-  imageUrl: p.imageUrl || "",
+  thumbUrl: p.thumbUrl || "",     // ใช้รูปย่อเท่านั้น รูปเต็มอยู่คนละคอลเลกชัน
   authorName: p.authorName || ""
 });
+
+/* เก็บกวาดข้อมูลที่ชี้ไปยังประกาศที่ถูกลบไปแล้ว (เช่น ผู้ใช้ลบบัญชี) */
+async function cleanupOrphans() {
+  const matches = await db.collection("matches").limit(500).get();
+  let n = 0;
+  for (const d of matches.docs) {
+    const m = d.data();
+    const [lost, found] = await Promise.all([
+      db.collection("posts").doc(m.lostPostId).get(),
+      db.collection("posts").doc(m.foundPostId).get()
+    ]);
+    if (!lost.exists || !found.exists) {
+      await d.ref.delete();
+      await db.collection("embeddings").doc(m.lostPostId).delete().catch(() => {});
+      await db.collection("embeddings").doc(m.foundPostId).delete().catch(() => {});
+      n++;
+    }
+  }
+  if (n) console.log(`ลบผลจับคู่ที่ชี้ไปยังประกาศที่ไม่มีอยู่แล้ว ${n} รายการ`);
+  return n;
+}
 
 async function runMatching() {
   // ประกาศที่ยังไม่ได้ประมวลผล
@@ -273,7 +311,7 @@ async function runMatching() {
       created++;
 
       // ---------- แจ้งเจ้าของประกาศของหาย ----------
-      await sendEmail({
+      if (await wantsEmail(lostPost.authorId)) await sendEmail({
         to: lostPost.authorEmail,
         toName: lostPost.authorName,
         subject: `พบของที่อาจตรงกับ "${lostPost.category}" ที่คุณแจ้งหาย (${Math.round(r.score * 100)}%)`,
@@ -298,7 +336,7 @@ async function runMatching() {
       });
 
       // ---------- แจ้งเจ้าของประกาศของที่เก็บได้ ----------
-      await sendEmail({
+      if (await wantsEmail(foundPost.authorId)) await sendEmail({
         to: foundPost.authorEmail,
         toName: foundPost.authorName,
         subject: `อาจมีเจ้าของของ "${foundPost.category}" ที่คุณเก็บได้แล้ว`,
@@ -327,7 +365,12 @@ async function runMatching() {
 }
 
 /* ===================================================================
-   ส่วนที่ 2 — เปิดเผยข้อมูลติดต่อหลังยืนยันว่าใช่
+   ส่วนที่ 2 — เปิดเผยข้อมูลติดต่อ
+   -------------------------------------------------------------------
+   เงื่อนไข: matchStatus ต้องเป็น 'accepted' ซึ่งจะเกิดขึ้นได้ก็ต่อเมื่อ
+   เจ้าของของหายยืนยันว่าใช่ (waiting_for_user → awaiting_finder)
+   และผู้ที่เก็บของได้ยินยอมให้เปิดเผยอีเมล (awaiting_finder → accepted)
+   ถ้าฝ่ายใดฝ่ายหนึ่งปฏิเสธ จะไม่มีการแลกข้อมูลติดต่อเลย
    =================================================================== */
 async function revealContacts() {
   const snap = await db.collection("matches")
@@ -368,12 +411,12 @@ async function revealContacts() {
         และตรวจสอบลักษณะของให้ตรงกันก่อนส่งมอบ
       </p>`;
 
-    await sendEmail({
+    if (await wantsEmail(m.lostAuthorId)) await sendEmail({
       to: lostContact.email, toName: lostContact.name,
       subject: "ยืนยันการจับคู่แล้ว — ข้อมูลติดต่อผู้ที่เก็บของได้",
       html: emailShell("ติดต่อผู้ที่เก็บของของคุณได้แล้ว", body("ผู้ที่เก็บของได้", foundContact), "เปิดเว็บ", SITE_URL)
     });
-    await sendEmail({
+    if (await wantsEmail(m.foundAuthorId)) await sendEmail({
       to: foundContact.email, toName: foundContact.name,
       subject: "ยืนยันการจับคู่แล้ว — ข้อมูลติดต่อเจ้าของ",
       html: emailShell("เจอเจ้าของแล้ว", body("เจ้าของของชิ้นนี้", lostContact), "เปิดเว็บ", SITE_URL)
@@ -391,7 +434,8 @@ async function revealContacts() {
   try {
     const created = await runMatching();
     const revealed = await revealContacts();
-    console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created} รายการ, เปิดเผยข้อมูลติดต่อ ${revealed} รายการ`);
+    const cleaned = await cleanupOrphans();
+    console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created}, เปิดเผยข้อมูลติดต่อ ${revealed}, เก็บกวาด ${cleaned}`);
     process.exit(0);
   } catch (err) {
     console.error("เกิดข้อผิดพลาด:", err);

@@ -1,11 +1,14 @@
 {
-  "name": "cmu-lost-found-worker",
+  "name": "cmu-lost-found",
   "version": "1.0.0",
-  "description": "ตัวจับคู่ประกาศและส่งอีเมลแจ้งเตือน ทำงานบน GitHub Actions",
+  "description": "ระบบของหาย–ของพบ มหาวิทยาลัยเชียงใหม่ — ตัวจับคู่ NLP และระบบส่งอีเมลแจ้งเตือน",
   "type": "module",
   "private": true,
   "scripts": {
-    "match": "node scripts/match-and-notify.mjs"
+    "test": "node --test \"tests/*.test.mjs\"",
+    "test:coverage": "node --test --experimental-test-coverage \"tests/*.test.mjs\"",
+    "match": "node scripts/match-and-notify.mjs",
+    "evaluate": "node scripts/evaluate.mjs"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0"

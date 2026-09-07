@@ -6,17 +6,21 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // ต้องยืนยันอีเมล และเป็นอีเมล cmu.ac.th เท่านั้น
     function verifiedCmu() {
       return signedIn()
         && request.auth.token.email_verified == true
         && request.auth.token.email.matches('.*@([a-zA-Z0-9-]+[.])*cmu[.]ac[.]th');
     }
 
+    // ใช้ custom claim แทนการอ่านเอกสาร users ทุกครั้ง
+    // เดิมใช้ get() ซึ่งคิดเป็น 1 read ต่อการตรวจ 1 เอกสาร แอดมินอ่าน 100 โพสต์ = 200 reads
+    // ตั้ง claim ด้วย scripts/set-admin.mjs
     function isAdmin() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
     }
 
     // ---------- โปรไฟล์ผู้ใช้ ----------
@@ -25,14 +29,12 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == userId
                     && request.resource.data.role == 'user';
       allow update: if signedIn() && request.auth.uid == userId
-                    && request.resource.data.email == resource.data.email
-                    && request.resource.data.role == resource.data.role;
-      allow delete: if false;
+                    && changedKeys().hasOnly(['displayName','phone','faculty','notifyEmail','lang','postCountDate','postCountToday']);
+      allow delete: if signedIn() && request.auth.uid == userId;
     }
 
-    // ---------- ประกาศของหาย/ของพบ ----------
-    // สำคัญ: ผู้ใช้เห็นได้เฉพาะประกาศของตัวเองเท่านั้น
-    // การจับคู่ทำจากฝั่งเซิร์ฟเวอร์ (GitHub Actions + Admin SDK) ซึ่งข้าม rules เหล่านี้
+    // ---------- ประกาศ ----------
+    // ผู้ใช้เห็นได้เฉพาะประกาศของตัวเอง การจับคู่ทำฝั่งเซิร์ฟเวอร์ซึ่งข้าม rules
     match /posts/{postId} {
       allow read: if verifiedCmu() && (resource.data.authorId == request.auth.uid || isAdmin());
 
@@ -41,47 +43,83 @@ service cloud.firestore {
                     && request.resource.data.authorEmail == request.auth.token.email
                     && request.resource.data.type in ['lost', 'found']
                     && request.resource.data.status == 'active'
-                    && request.resource.data.processed == false
+                    && request.resource.data.processed is bool
+                    && request.resource.data.autoCategorized is bool
+                    && (request.resource.data.autoCategorized == true
+                        || request.resource.data.processed == false)
                     && request.resource.data.description is string
                     && request.resource.data.description.size() > 0
                     && request.resource.data.description.size() <= 2000
                     && request.resource.data.category.size() <= 60
                     && request.resource.data.color.size() <= 40
                     && request.resource.data.location.size() <= 120
-                    // จำกัดขนาดรูป (base64) ไม่ให้เกิน ~750KB
-                    && request.resource.data.imageUrl.size() < 750000;
+                    // เก็บเฉพาะรูปย่อในเอกสารหลัก รูปเต็มอยู่ที่ postImages
+                    && request.resource.data.thumbUrl.size() < 60000;
 
-      // เจ้าของแก้ได้เฉพาะฟิลด์ status เท่านั้น (ปิดเคสว่าได้ของคืนแล้ว)
-      allow update: if verifiedCmu()
-                    && resource.data.authorId == request.auth.uid
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-                    && request.resource.data.status in ['active', 'resolved'];
+      // เจ้าของแก้ได้เฉพาะสถานะ ส่วนแอดมินแก้ได้เพื่อซ่อนเนื้อหาไม่เหมาะสม
+      allow update: if verifiedCmu() && (
+                      (resource.data.authorId == request.auth.uid
+                       && changedKeys().hasOnly(['status'])
+                       && request.resource.data.status in ['active','resolved'])
+                      || (isAdmin()
+                          && changedKeys().hasOnly(['status','hiddenReason','hiddenAt']))
+                    );
 
-      allow delete: if verifiedCmu() && resource.data.authorId == request.auth.uid;
+      allow delete: if verifiedCmu() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // ---------- รูปเต็ม แยกออกมาเพื่อไม่ให้หน้ารายการต้องโหลดรูปทั้งหมด ----------
+    match /postImages/{postId} {
+      allow read:   if verifiedCmu()
+                    && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if verifiedCmu()
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.data.size() < 750000;
+      allow update: if false;
+      allow delete: if verifiedCmu()
+                    && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
     // ---------- ผลการจับคู่ ----------
-    // เขียนโดยเซิร์ฟเวอร์เท่านั้น ผู้ใช้อ่านได้เฉพาะคู่ที่ตัวเองเกี่ยวข้อง
+    // เขียนโดยเซิร์ฟเวอร์เท่านั้น ต้องได้รับความยินยอมจากทั้งสองฝ่ายก่อนเปิดเผยข้อมูลติดต่อ
     match /matches/{matchId} {
-      allow read: if verifiedCmu() && request.auth.uid in resource.data.participantIds;
+      allow read: if verifiedCmu()
+                  && (request.auth.uid in resource.data.participantIds || isAdmin());
 
       allow create, delete: if false;
 
-      // เจ้าของประกาศของหายเป็นคนตัดสินว่าใช่หรือไม่ใช่ และแก้ได้แค่ฟิลด์เดียว
       allow update: if verifiedCmu()
-                    && resource.data.lostAuthorId == request.auth.uid
-                    && resource.data.matchStatus == 'waiting_for_user'
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['matchStatus'])
-                    && request.resource.data.matchStatus in ['accepted', 'rejected'];
+                    && changedKeys().hasOnly(['matchStatus'])
+                    && (
+                      // ขั้นที่ 1 เจ้าของของหายตัดสินว่าใช่ของตัวเองหรือไม่
+                      (resource.data.lostAuthorId == request.auth.uid
+                       && resource.data.matchStatus == 'waiting_for_user'
+                       && request.resource.data.matchStatus in ['awaiting_finder', 'rejected'])
+                      ||
+                      // ขั้นที่ 2 ผู้ที่เก็บของได้ยินยอมให้เปิดเผยข้อมูลติดต่อหรือไม่
+                      (resource.data.foundAuthorId == request.auth.uid
+                       && resource.data.matchStatus == 'awaiting_finder'
+                       && request.resource.data.matchStatus in ['accepted', 'declined'])
+                    );
     }
 
-    // ---------- เวกเตอร์ embedding ----------
-    // เขียนและอ่านโดยเซิร์ฟเวอร์เท่านั้น ผู้ใช้ไม่ต้องเข้าถึงเลย
+    // ---------- การรายงานเนื้อหาไม่เหมาะสม ----------
+    match /reports/{reportId} {
+      allow read:   if isAdmin();
+      allow create: if verifiedCmu()
+                    && request.resource.data.reporterId == request.auth.uid
+                    && request.resource.data.status == 'open'
+                    && request.resource.data.reason.size() > 0
+                    && request.resource.data.reason.size() <= 500;
+      allow update: if isAdmin() && changedKeys().hasOnly(['status','handledAt']);
+      allow delete: if false;
+    }
+
+    // ---------- เวกเตอร์ embedding — เซิร์ฟเวอร์เท่านั้น ----------
     match /embeddings/{postId} {
       allow read, write: if false;
     }
 
-    // ปิดทุกอย่างที่เหลือ
     match /{document=**} {
       allow read, write: if false;
     }

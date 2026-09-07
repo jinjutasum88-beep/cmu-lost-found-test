@@ -49,7 +49,36 @@ const SYNONYMS = [
   [["ตุ๊กตา","พวงกุญแจตุ๊กตา","doll"], "ตุ๊กตา"],
   [["รูป","ลาย","ภาพ"], "ลาย"],
   [["แมว","cat","เหมียว"], "แมว"],
-  [["หมา","สุนัข","dog"], "หมา"]
+  [["หมา","สุนัข","dog"], "หมา"],
+
+  /* ---- คำอังกฤษ ↔ ไทย ----
+     จำเป็นเพราะเว็บรองรับสองภาษา นักศึกษาต่างชาติจะเขียนคำอธิบายเป็นอังกฤษ
+     ถ้าไม่ยุบให้เป็นคำเดียวกัน ชั้นเทียบตัวอักษรจะได้ 0 สนิทเมื่อจับคู่ข้ามภาษา */
+  [["bag","backpack","handbag","satchel","เป้","กระเป๋าเป้","กระเป๋าสะพาย"], "กระเป๋า"],
+  [["key","keys","keychain","ลูกกุญแจ","พวงกุญแจ"], "กุญแจ"],
+  // ระวัง: ห้ามใส่คำว่า "phone" เดี่ยวๆ เพราะจะไปกินคำว่า "iphone" กลายเป็น "iโทรศัพท์"
+  [["mobile phone","cell phone","smartphone","mobile","มือถือ","โทรศัพท์มือถือ"], "โทรศัพท์"],
+  [["student id","student card","id card","บัตร นศ","บัตรนศ"], "บัตรนักศึกษา"],
+  [["wallet","purse"], "กระเป๋าสตางค์"],
+  [["earphone","earphones","headphone","headphones","earbuds"], "หูฟัง"],
+  [["glasses","eyeglasses","spectacles","แว่น"], "แว่นตา"],
+  [["umbrella"], "ร่ม"],
+  [["bottle","water bottle","tumbler","กระบอกน้ำ","แก้วน้ำ"], "ขวดน้ำ"],
+  [["charger","cable","charging cable","ที่ชาร์จ","สายชาร์ท"], "สายชาร์จ"],
+  [["notebook","note book","documents","document","สมุด","เอกสาร"], "สมุด"],
+  [["clothes","clothing","shirt","jacket","hoodie","เสื้อ"], "เสื้อผ้า"],
+  [["sticker","stickers"], "สติกเกอร์"],
+  [["scratch","scratches","scratched","dent","รอยบุบ"], "รอยขีดข่วน"],
+  [["black"], "ดำ"], [["white"], "ขาว"], [["red"], "แดง"],
+  [["blue","navy"], "น้ำเงิน"], [["green"], "เขียว"], [["yellow"], "เหลือง"],
+  [["pink"], "ชมพู"], [["grey","gray"], "เทา"], [["brown"], "น้ำตาล"],
+  [["library","central library"], "หอสมุด"],
+  [["engineering","faculty of engineering"], "วิศวกรรมศาสตร์"],
+  [["canteen","cafeteria","food court"], "โรงอาหาร"],
+  [["dormitory","dorm","dormitories"], "หอพัก"],
+  [["stadium","sports field"], "สนามกีฬา"],
+  [["found","i found","picked up"], "พบ"],
+  [["lost","i lost","missing"], "หาย"]
 ];
 
 /* ---------- 2. คำที่ไม่มีความหมายในการจับคู่ ---------- */
@@ -61,19 +90,29 @@ const STOPWORDS = new Set([
 ]);
 
 /* ---------- 3. ทำความสะอาดข้อความ ---------- */
+
+/**
+ * ข้อความมี "คำ" ให้วิเคราะห์จริงหรือไม่
+ * ถ้าผู้ใช้พิมพ์แต่อีโมจิหรือสัญลักษณ์ จะไม่มีตัวอักษรไทย/อังกฤษเลย
+ * กรณีนั้นจับคู่ด้วย NLP ไม่ได้ ต้องจัดเข้าหมวด "อื่นๆ" และข้ามการจับคู่
+ */
+export function hasReadableText(text){
+  return /[\u0E00-\u0E7Fa-zA-Z]/.test(String(text || ""));
+}
+
 export function normalize(text){
   let s = String(text || "").toLowerCase().normalize("NFC");
   // ตัดอักขระพิเศษ เก็บไว้เฉพาะ ไทย อังกฤษ ตัวเลข ช่องว่าง
   s = s.replace(/[^\u0E00-\u0E7Fa-z0-9\s]/g, " ");
   s = s.replace(/\s+/g, " ").trim();
   // ยุบคำพ้องให้เหลือรูปเดียว
-  for (const [variants, canonical] of SYNONYMS){
-    for (const v of variants){
-      if (v === canonical) continue;
-      s = s.split(v).join(canonical);
-    }
-  }
-  return s;
+  // เรียงจากวลียาวไปสั้น เพื่อให้ "student card" ถูกแทนก่อน "card"
+  const pairs = [];
+  for (const [variants, canonical] of SYNONYMS)
+    for (const v of variants) if (v !== canonical) pairs.push([v, canonical]);
+  pairs.sort((a, b) => b[0].length - a[0].length);
+  for (const [v, canonical] of pairs) s = s.split(v).join(canonical);
+  return s.replace(/\s+/g, " ").trim();
 }
 
 /* ---------- 4. ตัดเป็น token แบบหยาบ ----------
