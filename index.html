@@ -41,8 +41,8 @@
   .brand h1{font-size:18px;margin:0;line-height:1.15}
   .brand p{margin:0;font-size:11.5px;color:var(--ink-soft)}
   
-  /* ระบบโปรไฟล์แบบวงกลมพร้อมดรอปดาวน์เมนู (User Avatar & Dropdown) */
-  .userchip{position:relative;display:flex;align-items:center;flex:none}
+  /* ระบบโปรไฟล์แบบวงกลมพร้อมดรอปดาวน์ และปุ่มแยกด้านนอก */
+  .userchip{position:relative;display:flex;align-items:center;gap:8px;flex:none}
   .user-avatar-btn{
     width:40px;height:40px;border-radius:50%;background:var(--purple);color:#fff;
     font-family:'Prompt',sans-serif;font-weight:600;font-size:16px;border:0;cursor:pointer;
@@ -51,8 +51,8 @@
   .user-avatar-btn:hover{background:var(--purple-deep);transform:scale(1.05)}
   
   .user-dropdown{
-    position:absolute;top:calc(100% + 10px);right:0;width:220px;background:var(--card);
-    border-radius:16px;box-shadow:var(--shadow);border:1.5px solid var(--line);padding:8px;z-index:100;
+    position:absolute;top:calc(100% + 10px);right:0;width:240px;background:var(--card);
+    border-radius:18px;box-shadow:var(--shadow);border:1.5px solid var(--line);padding:8px;z-index:100;
     display:flex;flex-direction:column;gap:4px;transform-origin:top right;transition:.15s;
   }
   .user-dropdown.hidden{display:none}
@@ -223,6 +223,16 @@
   .panel h3{margin:0 0 4px;font-size:17px}
   .panel .psub{color:var(--ink-soft);font-size:12.5px;margin:0 0 18px;line-height:1.7}
   .panel.danger{border:1.5px solid var(--lost-soft)}
+  
+  /* สไตล์ Select ในหน้าโปรไฟล์ให้เป็น Dropdown สวยงาม */
+  .panel select{
+    width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;
+    font-family:inherit;font-size:14.5px;
+    background:var(--paper) url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B6284' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") no-repeat right 14px center;
+    background-size:16px;appearance:none;-webkit-appearance:none;color:var(--ink);cursor:pointer;
+  }
+  .panel select:focus{outline:none;border-color:var(--purple);background-color:#fff}
+
   .switch-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
   .switch-row:first-of-type{border-top:0}
   .switch-row .txt{flex:1;font-size:13.5px;line-height:1.6}
@@ -377,19 +387,24 @@
       </div>
     </div>
     <div class="userchip">
+      <button class="langbtn" id="langBtnApp" onclick="toggleLang()" data-i18n-aria="common.langSwitch"></button>
+      <button class="btn small" id="refreshBtn" onclick="refreshNow()" data-i18n-aria="nav.refresh" data-i18n-title="nav.refresh">↻</button>
+      
       <button type="button" class="user-avatar-btn" id="userAvatarBtn" onclick="toggleUserDropdown(event)" aria-label="เมนูผู้ใช้งาน">
         <span id="userAvatarLetter">U</span>
       </button>
       
-      <!-- Dropdown Menu -->
+      <!-- Dropdown Menu แยกหมวดหมู่การตั้งค่าตามต้องการ -->
       <div id="userDropdownMenu" class="user-dropdown hidden">
         <div class="user-dropdown-header">
           <div class="ud-name" id="udName">-</div>
           <div class="ud-email" id="udEmail">-</div>
         </div>
-        <button onclick="closeDropdown(); showView('profile')">⚙️ ตั้งค่าโปรไฟล์</button>
-        <button onclick="closeDropdown(); toggleLang()"><span id="udLangLabel">🌐 เปลี่ยนภาษา (EN/ไทย)</span></button>
-        <button onclick="closeDropdown(); refreshNow()"><span data-i18n-title="nav.refresh">↻ รีเฟรชข้อมูล</span></button>
+        <button onclick="closeDropdown(); openSettingsModal('profile')">👤 ตั้งค่าข้อมูลส่วนตัว</button>
+        <button onclick="closeDropdown(); openSettingsModal('prefs')">🔔 การแจ้งเตือนและการแสดงผล</button>
+        <button onclick="closeDropdown(); openSettingsModal('security')">🔒 ความปลอดภัย</button>
+        <button class="danger" onclick="closeDropdown(); openSettingsModal('danger')">⚠️ ลบบัญชีผู้ใช้</button>
+        <div style="border-top:1px solid var(--line);margin:4px 0"></div>
         <button class="danger" onclick="closeDropdown(); handleLogout()"><span data-i18n="nav.logout">ออกจากระบบ</span></button>
       </div>
     </div>
@@ -400,7 +415,6 @@
     <button onclick="showView('create')" data-tab="create" data-i18n="nav.create"></button>
     <button onclick="showView('notif')" data-tab="notif"><span data-i18n="nav.notif"></span><span class="badge-count hidden" id="notifBadge">0</span></button>
     <button onclick="showView('matches')" data-tab="matches" data-i18n="nav.matches"></button>
-    <button onclick="showView('profile')" data-tab="profile" data-i18n="nav.profile" class="hidden"></button>
     <button onclick="showView('admin')" data-tab="admin" id="adminTab" class="hidden" data-i18n="nav.admin"></button>
   </nav>
 
@@ -518,73 +532,6 @@
       </div>
     </section>
 
-    <!-- PROFILE -->
-    <section id="view-profile" class="view">
-      <div class="view-head"><h2 data-i18n="profile.title"></h2><div class="sub" data-i18n="profile.sub"></div></div>
-
-      <div class="panel">
-        <h3 data-i18n="profile.info"></h3>
-        <p class="psub" data-i18n="profile.displayNameHint"></p>
-        <div class="field">
-          <label for="prName" data-i18n="profile.displayName"></label>
-          <input type="text" id="prName" autocomplete="name">
-        </div>
-        <div class="field">
-          <label for="prEmail" data-i18n="profile.email"></label>
-          <input type="email" id="prEmail" disabled>
-          <div class="hint" data-i18n="profile.emailFixed"></div>
-        </div>
-        <div class="field">
-          <label for="prPhone" data-i18n="profile.phone"></label>
-          <input type="tel" id="prPhone" data-i18n-ph="profile.phonePh" autocomplete="tel">
-          <div class="hint" data-i18n="profile.phoneHint"></div>
-        </div>
-        <div class="field">
-          <label for="prFaculty" data-i18n="profile.faculty"></label>
-          <select id="prFaculty">
-            <option value="">กรุณาเลือกคณะ</option>
-            <option value="คณะวิศวกรรมศาสตร์">คณะวิศวกรรมศาสตร์</option>
-            <option value="คณะมนุษยศาสตร์">คณะมนุษยศาสตร์</option>
-            <option value="คณะบริหารธุรกิจ">คณะบริหารธุรกิจ</option>
-            <option value="คณะวิทยาศาสตร์">คณะวิทยาศาสตร์</option>
-            <option value="อื่นๆ">อื่นๆ</option>
-          </select>
-        </div>
-        <button class="btn primary" onclick="saveProfile()" id="prSaveBtn" data-i18n="common.save"></button>
-        <div class="msgline" id="prMsg" role="status" aria-live="polite"></div>
-      </div>
-
-      <div class="panel">
-        <h3 data-i18n="profile.prefs"></h3>
-        <p class="psub"></p>
-        <div class="switch-row">
-          <div class="txt"><span data-i18n="profile.notifyEmail"></span><small data-i18n="profile.notifyEmailHint"></small></div>
-          <span class="switch"><input type="checkbox" id="prNotify" onchange="savePrefs()" data-i18n-aria="profile.notifyEmail"><span></span></span>
-        </div>
-        <div class="field" style="margin-top:16px">
-          <label for="prLang" data-i18n="profile.language"></label>
-          <select id="prLang" onchange="setLangFromProfile(this.value)">
-            <option value="th">ไทย</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h3 data-i18n="profile.security"></h3>
-        <p class="psub" data-i18n="profile.changePwHint"></p>
-        <button class="btn" onclick="sendResetFromProfile()" data-i18n="profile.sendResetLink"></button>
-        <div class="msgline" id="prPwMsg" role="status" aria-live="polite"></div>
-      </div>
-
-      <div class="panel danger">
-        <h3 data-i18n="profile.danger"></h3>
-        <p class="psub" data-i18n="profile.dangerHint"></p>
-        <button class="btn danger" onclick="deleteAccount()" data-i18n="profile.deleteAccount"></button>
-        <div class="msgline" id="prDelMsg" role="status" aria-live="polite"></div>
-      </div>
-    </section>
-
     <!-- ADMIN -->
     <section id="view-admin" class="view">
       <div class="view-head"><h2 data-i18n="admin.title"></h2><div class="sub" data-i18n="admin.sub"></div></div>
@@ -611,6 +558,17 @@
   </main>
 
   <footer class="foot" data-i18n="app.footer"></footer>
+</div>
+
+<!-- SETTINGS MODAL CONTAINER (แยกหน้าตั้งค่าเป็นสัดส่วน) -->
+<div id="settingsModal" class="modal-bg hidden" onclick="closeSettingsModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px">
+      <h3 id="settingsModalTitle" style="margin:0;font-size:18px">ตั้งค่า</h3>
+      <button class="btn small" onclick="closeSettingsModal()">✕ ปิด</button>
+    </div>
+    <div id="settingsModalContent"></div>
+  </div>
 </div>
 
 <div id="modalRoot"></div>
@@ -653,9 +611,8 @@ const PLACES = ["หอสมุดกลาง","คณะวิศวกรร
 
 initLang();
 function paintLangButtons(){
-  const label = getLang() === 'th' ? 'English (EN)' : 'ภาษาไทย (TH)';
-  if($('udLangLabel')) $('udLangLabel').textContent = `🌐 ${label}`;
-  if ($('prLang')) $('prLang').value = getLang();
+  const label = getLang() === 'th' ? 'EN' : 'ไทย';
+  ['langBtnAuth','langBtnVerify','langBtnApp'].forEach(id => { if($(id)) $(id).textContent = label; });
 }
 function toggleLang(){ setLang(getLang() === 'th' ? 'en' : 'th'); }
 function setLangFromProfile(v){ setLang(v); savePrefs(); }
@@ -685,6 +642,113 @@ function updateUserDataUI(displayName, email){
   $('udEmail').textContent = email || '';
   const initial = name.trim().charAt(0).toUpperCase();
   $('userAvatarLetter').textContent = initial || 'U';
+}
+
+function openSettingsModal(type){
+  const titleEl = $('settingsModalTitle');
+  const contentEl = $('settingsModalContent');
+  const modalBg = $('settingsModal');
+  modalBg.classList.remove('hidden');
+
+  if (type === 'profile'){
+    titleEl.textContent = '👤 ตั้งค่าข้อมูลส่วนตัว';
+    contentEl.innerHTML = `
+      <div class="panel" style="box-shadow:none;padding:0;max-width:100%">
+        <p class="psub" data-i18n="profile.displayNameHint"></p>
+        <div class="field">
+          <label for="prName" data-i18n="profile.displayName"></label>
+          <input type="text" id="prName" autocomplete="name" value="${esc(profile?.displayName || auth.currentUser?.displayName || '')}">
+        </div>
+        <div class="field">
+          <label for="prEmail" data-i18n="profile.email"></label>
+          <input type="email" id="prEmail" disabled value="${esc(auth.currentUser?.email || '')}">
+          <div class="hint" data-i18n="profile.emailFixed"></div>
+        </div>
+        <div class="field">
+          <label for="prPhone" data-i18n="profile.phone"></label>
+          <input type="tel" id="prPhone" value="${esc(profile?.phone || '')}" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label for="prFaculty" data-i18n="profile.faculty"></label>
+          <select id="prFaculty">
+            <option value="">กรุณาเลือกคณะ</option>
+            <option value="คณะวิศวกรรมศาสตร์">คณะวิศวกรรมศาสตร์</option>
+            <option value="คณะมนุษยศาสตร์">คณะมนุษยศาสตร์</option>
+            <option value="คณะบริหารธุรกิจ">คณะบริหารธุรกิจ</option>
+            <option value="คณะวิทยาศาสตร์">คณะวิทยาศาสตร์</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
+        </div>
+        <button class="btn primary" onclick="saveProfileModal()" id="prSaveBtn" style="margin-top:10px" data-i18n="common.save">บันทึก</button>
+        <div class="msgline" id="prMsg" role="status" aria-live="polite"></div>
+      </div>`;
+    $('prFaculty').value = profile?.faculty || '';
+  } else if (type === 'prefs'){
+    titleEl.textContent = '🔔 การแจ้งเตือนและการแสดงผล';
+    contentEl.innerHTML = `
+      <div class="panel" style="box-shadow:none;padding:0;max-width:100%">
+        <div class="switch-row" style="border-top:0;padding-top:0">
+          <div class="txt"><span data-i18n="profile.notifyEmail">แจ้งเตือนทางอีเมล</span><small data-i18n="profile.notifyEmailHint">รับอีเมลเมื่อมีการจับคู่สำเร็จ</small></div>
+          <span class="switch"><input type="checkbox" id="prNotify" ${profile?.notifyEmail !== false ? 'checked' : ''} onchange="savePrefsModal()"><span></span></span>
+        </div>
+        <div class="field" style="margin-top:20px">
+          <label for="prLang" data-i18n="profile.language">ภาษาของระบบ</label>
+          <select id="prLang" onchange="setLangFromProfile(this.value)">
+            <option value="th">ไทย</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>`;
+    $('prLang').value = getLang();
+  } else if (type === 'security'){
+    titleEl.textContent = '🔒 ความปลอดภัย';
+    contentEl.innerHTML = `
+      <div class="panel" style="box-shadow:none;padding:0;max-width:100%">
+        <p class="psub" data-i18n="profile.changePwHint">คุณสามารถรีเซ็ตรหัสผ่านผ่านทางอีเมลของคุณได้</p>
+        <button class="btn" onclick="sendResetFromProfile()">ส่งลิงก์รีเซ็ตรหัสผ่าน</button>
+        <div class="msgline" id="prPwMsg" role="status" aria-live="polite"></div>
+      </div>`;
+  } else if (type === 'danger'){
+    titleEl.textContent = '⚠️ ลบบัญชีผู้ใช้';
+    contentEl.innerHTML = `
+      <div class="panel danger" style="box-shadow:none;padding:0;max-width:100%">
+        <p class="psub" data-i18n="profile.dangerHint">การลบบัญชีจะไม่สามารถกู้คืนข้อมูลและประกาศทั้งหมดของคุณได้</p>
+        <button class="btn danger" onclick="deleteAccount()" data-i18n="profile.deleteAccount">ลบบัญชีถาวร</button>
+        <div class="msgline" id="prDelMsg" role="status" aria-live="polite"></div>
+      </div>`;
+  }
+}
+
+function closeSettingsModal(){
+  $('settingsModal').classList.add('hidden');
+}
+
+async function saveProfileModal(){
+  const msg = $('prMsg'), btn = $('prSaveBtn');
+  const name = $('prName').value.trim();
+  if (!name){ msg.style.color='var(--lost)'; msg.textContent = t('common.required'); return; }
+  btn.disabled = true;
+  try{
+    await updateDoc(doc(db,'users',CURRENT_UID), {
+      displayName: name,
+      phone: $('prPhone').value.trim(),
+      faculty: $('prFaculty').value.trim()
+    });
+    await updateProfile(auth.currentUser, { displayName: name });
+    profile = { ...profile, displayName:name, phone:$('prPhone').value.trim(), faculty:$('prFaculty').value.trim() };
+    updateUserDataUI(name, auth.currentUser?.email);
+    msg.style.color='var(--found)'; msg.textContent = t('profile.saved');
+    setTimeout(() => closeSettingsModal(), 1200);
+  }catch(err){ msg.style.color='var(--lost)'; msg.textContent = t('profile.saveFail',{msg:err.message}); }
+  finally{ btn.disabled = false; }
+}
+
+async function savePrefsModal(){
+  try{
+    const notify = $('prNotify').checked;
+    await updateDoc(doc(db,'users',CURRENT_UID), { notifyEmail: notify, lang: getLang() });
+    profile = { ...profile, notifyEmail: notify, lang: getLang() };
+  }catch(err){ console.warn(err); }
 }
 
 function opts(list, kind){ return list.map(v => `<option value="${esc(v)}">${esc(optionLabel(kind, v))}</option>`).join(''); }
@@ -729,7 +793,6 @@ function rerender(){
   else if (currentView === 'matches') renderMatches();
   else if (currentView === 'match-detail') renderMatchDetail();
   else if (currentView === 'post-detail') renderPostDetail();
-  else if (currentView === 'profile') fillProfileForm();
   else if (currentView === 'admin') renderAdmin();
   else if (currentView === 'admin-detail') renderAdminDetail();
 }
@@ -928,13 +991,18 @@ let refreshing = false;
 async function refreshNow(silent){
   if (refreshing || !CURRENT_UID) return;
   refreshing = true;
+  const btn = $('refreshBtn');
+  if (!silent && btn){ btn.disabled = true; btn.textContent = '⋯'; }
   const before = JSON.stringify([allPosts.map(p=>p.id+p.status), allMatches.map(m=>m.id+m.matchStatus+m.contactRevealed)]);
   try{
     await loadData();
     const after = JSON.stringify([allPosts.map(p=>p.id+p.status), allMatches.map(m=>m.id+m.matchStatus+m.contactRevealed)]);
     if (before !== after && currentView !== 'match-detail') rerender();
   }catch(err){ console.error(err); }
-  finally{ refreshing = false; }
+  finally{
+    refreshing = false;
+    if (!silent && btn){ btn.disabled = false; btn.textContent = '↻'; }
+  }
 }
 setInterval(() => {
   if (document.visibilityState === 'visible') refreshNow(true);
@@ -1521,41 +1589,6 @@ async function sendReport(postId){
   }catch(err){ msg.style.color='var(--lost)'; msg.textContent = err.message; }
 }
 
-function fillProfileForm(){
-  $('prName').value = profile?.displayName || auth.currentUser?.displayName || '';
-  $('prEmail').value = auth.currentUser?.email || '';
-  $('prPhone').value = profile?.phone || '';
-  $('prFaculty').value = profile?.faculty || '';
-  $('prNotify').checked = profile?.notifyEmail !== false;
-  $('prLang').value = getLang();
-}
-
-async function saveProfile(){
-  const msg = $('prMsg'), btn = $('prSaveBtn');
-  const name = $('prName').value.trim();
-  if (!name){ msg.style.color='var(--lost)'; msg.textContent = t('common.required'); return; }
-  btn.disabled = true;
-  try{
-    await updateDoc(doc(db,'users',CURRENT_UID), {
-      displayName: name,
-      phone: $('prPhone').value.trim(),
-      faculty: $('prFaculty').value.trim()
-    });
-    await updateProfile(auth.currentUser, { displayName: name });
-    profile = { ...profile, displayName:name, phone:$('prPhone').value.trim(), faculty:$('prFaculty').value.trim() };
-    updateUserDataUI(name, auth.currentUser?.email);
-    msg.style.color='var(--found)'; msg.textContent = t('profile.saved');
-  }catch(err){ msg.style.color='var(--lost)'; msg.textContent = t('profile.saveFail',{msg:err.message}); }
-  finally{ btn.disabled = false; }
-}
-
-async function savePrefs(){
-  try{
-    await updateDoc(doc(db,'users',CURRENT_UID), { notifyEmail: $('prNotify').checked, lang: getLang() });
-    profile = { ...profile, notifyEmail: $('prNotify').checked, lang: getLang() };
-  }catch(err){ console.warn(err); }
-}
-
 async function sendResetFromProfile(){
   const msg = $('prPwMsg');
   try{
@@ -1769,10 +1802,10 @@ Object.assign(window, {
   onPostTypeChange, onPickupUnsureChange, onPickupNoteInput,
   togglePin,
   openMatchPage, matchDecision,
-  saveProfile, savePrefs, sendResetFromProfile, deleteAccount,
+  sendResetFromProfile, deleteAccount,
   openAdminCat, openAdminPost, exportStats,
   finderDecision, openReport, sendReport, adminHidePost, adminDeletePost, markReportHandled,
-  toggleUserDropdown, closeDropdown
+  toggleUserDropdown, closeDropdown, openSettingsModal, closeSettingsModal, saveProfileModal, savePrefsModal
 });
 
 applyLang();
