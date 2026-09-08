@@ -828,7 +828,13 @@ async function enterApp(user){
   const today = new Date().toISOString().slice(0,10);
   $('pDate').value = today; $('pDate').max = today;
 
-  await loadData();
+  try {
+    await loadData();
+  } catch (err) {
+    console.error('loadData failed:', err);
+    allPosts = [];
+    allMatches = [];
+  }
   booted = true;
   showScreen('app');
   applyLang(); paintLangButtons();
