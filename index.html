@@ -123,6 +123,28 @@
   .colordot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
   .status-strip{font-size:11px;text-align:center;padding:6px;font-weight:500;background:var(--found);color:#fff}
 
+  /* ---------- บอร์ดประกาศ + ปักหมุด ---------- */
+  .board-section{margin-bottom:26px}
+  .board-section-title{display:flex;align-items:center;gap:8px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;margin-bottom:12px;color:var(--ink)}
+  .pin-btn{position:absolute;top:10px;right:10px;z-index:2;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;box-shadow:var(--shadow-sm);transition:.15s;padding:0}
+  .pin-btn:hover{border-color:var(--purple);background:var(--purple-soft)}
+  .pin-btn.pinned{background:var(--purple);border-color:var(--purple);color:#fff}
+  .board-card-wrap{position:relative}
+  .board-card-wrap .tagcard{width:100%}
+  .mine-flag{position:absolute;top:10px;left:10px;z-index:2;font-size:10.5px;font-weight:600;background:var(--purple-deep);color:#fff;padding:3px 9px;border-radius:999px;box-shadow:var(--shadow-sm)}
+  /* การ์ดที่ปักหมุด: ดูเหมือนกระดาษปักบนบอร์ดจริง เอียงเล็กน้อย + เทปกาวด้านบน */
+  .pinned-grid{background:var(--paper-2);background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:14px 14px;border-radius:20px;padding:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px}
+  .pinned-grid .board-card-wrap{transform:rotate(-1.3deg)}
+  .pinned-grid .board-card-wrap:nth-child(2){transform:rotate(1.1deg)}
+  .pinned-grid .board-card-wrap:nth-child(3){transform:rotate(-0.6deg)}
+  .pinned-grid .board-card-wrap .tagcard{box-shadow:var(--shadow)}
+  .pinned-grid .tape{position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-2deg);width:56px;height:20px;background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 4px rgba(0,0,0,.08);z-index:3}
+  @media (prefers-reduced-motion:reduce){.pinned-grid .board-card-wrap{transform:none}}
+
+  /* ---------- จุดรับของ ---------- */
+  .pickup-check{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+  .pickup-check input{margin-top:3px}
+
   .empty{text-align:center;padding:56px 20px;color:var(--ink-soft);grid-column:1/-1}
   .empty .display{font-size:20px;color:var(--ink);margin-bottom:6px}
 
@@ -339,6 +361,7 @@
 
   <nav class="tabs" data-i18n-aria="nav.menu">
     <button class="active" onclick="showView('mine')" data-tab="mine" data-i18n="nav.mine"></button>
+    <button onclick="showView('board')" data-tab="board" data-i18n="nav.board"></button>
     <button onclick="showView('create')" data-tab="create" data-i18n="nav.create"></button>
     <button onclick="showView('notif')" data-tab="notif"><span data-i18n="nav.notif"></span><span class="badge-count hidden" id="notifBadge">0</span></button>
     <button onclick="showView('matches')" data-tab="matches" data-i18n="nav.matches"></button>
@@ -365,14 +388,30 @@
       <div class="grid" id="mineGrid"></div>
     </section>
 
+    <!-- BOARD -->
+    <section id="view-board" class="view">
+      <div class="view-head"><h2 data-i18n="board.title"></h2><div class="sub" data-i18n="board.sub"></div></div>
+      <div class="filter-row">
+        <label class="sr-only" for="bType" data-i18n="mine.filterType"></label>
+        <select id="bType" onchange="renderBoard()"></select>
+        <label class="sr-only" for="bCat" data-i18n="mine.filterCat"></label>
+        <select id="bCat" onchange="renderBoard()"></select>
+        <label class="sr-only" for="bQ" data-i18n="mine.search"></label>
+        <input id="bQ" type="search" oninput="renderBoard()" data-i18n-ph="mine.searchPh" style="min-width:230px">
+      </div>
+      <div id="boardPinnedSection" class="board-section"></div>
+      <p class="sub" id="boardCount" role="status" aria-live="polite" style="margin-bottom:14px"></p>
+      <div class="grid" id="boardGrid"></div>
+    </section>
+
     <!-- CREATE -->
     <section id="view-create" class="view">
       <div class="view-head" style="text-align:center"><h2 data-i18n="create.title"></h2></div>
       <div class="formcard">
         <form id="postForm" onsubmit="return handleCreatePost(event)">
           <div class="typepick">
-            <label class="lostL"><input type="radio" name="ptype" value="lost" checked><span data-i18n="create.typeLost"></span></label>
-            <label class="foundL"><input type="radio" name="ptype" value="found"><span data-i18n="create.typeFound"></span></label>
+            <label class="lostL"><input type="radio" name="ptype" value="lost" checked onchange="onPostTypeChange()"><span data-i18n="create.typeLost"></span></label>
+            <label class="foundL"><input type="radio" name="ptype" value="found" onchange="onPostTypeChange()"><span data-i18n="create.typeFound"></span></label>
           </div>
           <div class="row2">
             <div class="field">
@@ -400,6 +439,15 @@
               <label for="pDate" data-i18n="create.date"></label>
               <input type="date" id="pDate" required>
             </div>
+          </div>
+          <div class="field hidden" id="pickupNoteField">
+            <label for="pPickupNote" data-i18n="create.pickupNote"></label>
+            <textarea id="pPickupNote" rows="2" data-i18n-ph="create.pickupNotePh" oninput="onPickupNoteInput()"></textarea>
+            <div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.6" data-i18n="create.pickupNoteHint"></div>
+            <label class="pickup-check">
+              <input type="checkbox" id="pPickupUnsure" onchange="onPickupUnsureChange()">
+              <span data-i18n="create.pickupNoteUnsure"></span>
+            </label>
           </div>
           <div class="field">
             <label for="pImage" data-i18n="create.image"></label>
@@ -562,7 +610,7 @@ const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
 
 let CURRENT_UID = null, profile = null;
-let allPosts = [], allMatches = [];
+let allPosts = [], allMatches = [], allBoardPosts = [];
 let verifyQueue = [], verifyIdx = 0;
 let currentView = 'mine';
 let booted = false;
@@ -596,6 +644,7 @@ function fillSelects(){
   const keep = id => $(id) ? $(id).value : '';
   const kCat = keep('pCategory'), kColor = keep('pColor'), kLoc = keep('pLocation');
   const kmT = keep('mType'), kmC = keep('mCat'), kmS = keep('mStatus');
+  const kbT = keep('bType'), kbC = keep('bCat');
 
   $('pCategory').innerHTML = `<option value="">${esc(t('create.categoryPick'))}</option>` + opts(CATEGORIES,'category');
   $('pColor').innerHTML = `<option value="">${esc(t('create.colorPick'))}</option>` + opts(COLORS,'color');
@@ -603,9 +652,12 @@ function fillSelects(){
   $('mType').innerHTML = `<option value="">${esc(t('mine.allTypes'))}</option><option value="lost">${esc(t('common.lost'))}</option><option value="found">${esc(t('common.found'))}</option>`;
   $('mCat').innerHTML = `<option value="">${esc(t('mine.allCats'))}</option>` + opts(CATEGORIES,'category');
   $('mStatus').innerHTML = `<option value="">${esc(t('mine.allStatus'))}</option><option value="active">${esc(t('common.active'))}</option><option value="resolved">${esc(t('common.resolved'))}</option>`;
+  $('bType').innerHTML = `<option value="">${esc(t('mine.allTypes'))}</option><option value="lost">${esc(t('common.lost'))}</option><option value="found">${esc(t('common.found'))}</option>`;
+  $('bCat').innerHTML = `<option value="">${esc(t('mine.allCats'))}</option>` + opts(CATEGORIES,'category');
 
   $('pCategory').value = kCat; $('pColor').value = kColor; $('pLocation').value = kLoc;
   $('mType').value = kmT; $('mCat').value = kmC; $('mStatus').value = kmS;
+  $('bType').value = kbT; $('bCat').value = kbC;
 }
 
 /* ===================== สลับหน้าจอ ===================== */
@@ -630,6 +682,7 @@ function showView(name){
 }
 function rerender(){
   if (currentView === 'mine') renderMine();
+  else if (currentView === 'board') renderBoard();
   else if (currentView === 'notif') renderNotifs();
   else if (currentView === 'matches') renderMatches();
   else if (currentView === 'match-detail') renderMatchDetail();
@@ -810,8 +863,14 @@ async function loadData(){
   const ms = await getDocs(query(collection(db,'matches'), where('participantIds','array-contains',CURRENT_UID)));
   allMatches = ms.docs.map(d => ({ id:d.id, ...d.data() }))
                       .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  try{
+    const bs = await getDocs(collection(db,'boardPosts'));
+    allBoardPosts = bs.docs.map(d => ({ id:d.id, ...d.data() }))
+                          .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  }catch(err){ console.warn('โหลดบอร์ดไม่สำเร็จ:', err.message); allBoardPosts = []; }
   updateBadge();
 }
+function pinnedIds(){ return Array.isArray(profile?.pinnedPostIds) ? profile.pinnedPostIds : []; }
 
 function updateBadge(){
   const n = allMatches.filter(m => m.lostAuthorId === CURRENT_UID && m.matchStatus === 'waiting_for_user').length;
@@ -893,6 +952,98 @@ function renderMine(){
     : (list.length ? list.map(cardHTML).join('') : emptyState(t('mine.noResultTitle'), t('mine.noResultSub')));
 }
 
+/* ===================== บอร์ดประกาศ + ปักหมุด ===================== */
+function boardCardHTML(p){
+  const pinned = pinnedIds().includes(p.id);
+  const isMine = p.authorId === CURRENT_UID;
+  return `<div class="board-card-wrap">
+    ${pinned ? '<div class="tape" aria-hidden="true"></div>' : ''}
+    ${isMine ? `<span class="mine-flag">${esc(t('board.mineTag'))}</span>` : ''}
+    <button type="button" class="pin-btn ${pinned?'pinned':''}" onclick="event.stopPropagation();togglePin('${p.id}')"
+      aria-pressed="${pinned}" aria-label="${esc(t(pinned?'board.unpin':'board.pin'))}" title="${esc(t(pinned?'board.unpin':'board.pin'))}">${pinned?'📌':'📍'}</button>
+    <button class="tagcard" onclick="openBoardPost('${p.id}')">
+      <div class="photo">${p.thumbUrl ? `<img src="${p.thumbUrl}" loading="lazy" alt="${esc(optionLabel('category',p.category))}" onerror="this.parentElement.textContent='${esc(t('common.noImage'))}'">` : esc(t('common.noImage'))}</div>
+      <div class="body">
+        <div class="toprow">
+          <span class="cat">${esc(optionLabel('category', p.category))}</span>
+          <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
+        </div>
+        <div class="desc">${esc(p.description)}</div>
+        <div class="meta">
+          <span><span class="colordot" style="background:${colorHex(p.color)}"></span>${esc(optionLabel('color', p.color))}</span>
+          <span>📍 ${esc(optionLabel('location', p.location))}</span>
+        </div>
+      </div>
+    </button>
+  </div>`;
+}
+
+function renderBoard(){
+  const ty = $('bType').value, ca = $('bCat').value;
+  const q = $('bQ').value.trim().toLowerCase();
+  const pins = pinnedIds();
+
+  const matches = p => (!ty || p.type === ty) && (!ca || p.category === ca) &&
+    (!q || ((p.description||'') + ' ' + (p.category||'') + ' ' + (p.location||'')).toLowerCase().includes(q));
+
+  const pinnedPosts = pins.map(id => allBoardPosts.find(p => p.id === id)).filter(Boolean);
+  const rest = allBoardPosts.filter(p => !pins.includes(p.id));
+  const restFiltered = rest.filter(matches);
+
+  $('boardPinnedSection').innerHTML = pinnedPosts.length
+    ? `<div class="board-section-title">${esc(t('board.pinnedTitle'))} (${pinnedPosts.length}/3)</div>
+       <div class="pinned-grid">${pinnedPosts.map(boardCardHTML).join('')}</div>`
+    : '';
+
+  $('boardCount').textContent = allBoardPosts.length ? t('mine.count', { n:restFiltered.length, total:rest.length }) : '';
+  $('boardGrid').innerHTML = allBoardPosts.length === 0
+    ? emptyState(t('board.emptyTitle'), t('board.emptySub'))
+    : (restFiltered.length ? restFiltered.map(boardCardHTML).join('')
+      : (rest.length === 0 ? '' : emptyState(t('board.noResultTitle'), t('board.noResultSub'))));
+}
+
+async function togglePin(id){
+  const pins = pinnedIds();
+  let next;
+  if (pins.includes(id)) {
+    next = pins.filter(x => x !== id);
+  } else {
+    if (pins.length >= 3) { alert(t('board.pinLimit')); return; }
+    next = [...pins, id];
+  }
+  profile = { ...profile, pinnedPostIds: next };
+  renderBoard();
+  try{ await updateDoc(doc(db,'users',CURRENT_UID), { pinnedPostIds: next }); }
+  catch(err){ console.warn('บันทึกการปักหมุดไม่สำเร็จ:', err.message); }
+}
+
+function openBoardPost(id){
+  const p = allBoardPosts.find(x => x.id === id);
+  if (!p) return;
+  if (p.authorId === CURRENT_UID) { openMyPost(id); return; }
+  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="this.remove()">
+    <div class="modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
+        <button class="btn small" onclick="this.closest('.modal-bg').remove()">${esc(t('common.close'))}</button>
+      </div>
+      <h3 style="font-size:18px;margin:12px 0 4px">${esc(optionLabel('category', p.category))}</h3>
+      ${p.thumbUrl ? `<img src="${p.thumbUrl}" alt="" style="width:100%;border-radius:12px;margin:8px 0;max-height:220px;object-fit:cover">` : ''}
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">
+        <span class="colordot" style="background:${colorHex(p.color)}"></span>${esc(optionLabel('color', p.color))}
+      </div>
+      <div style="font-size:14px;line-height:1.6">${esc(p.description)}</div>
+      <div class="note-box" style="margin-top:14px">
+        <div>📍 <b>${esc(t('detail.location'))}:</b> ${esc(optionLabel('location', p.location))}</div>
+        <div>📅 <b>${esc(t('detail.date'))}:</b> ${fmtDate(p.eventDate)}</div>
+        <div>🕒 <b>${esc(t('detail.posted'))}:</b> ${esc(timeAgo(p.createdAt))}</div>
+      </div>
+      <div style="margin-top:14px;text-align:center">
+        <button class="btn small" onclick="openReport('${p.id}')">${esc(t('report.button'))}</button>
+      </div>
+    </div></div>`;
+}
+
 let detailPostId = null;
 function openMyPost(id){ detailPostId = id; showView('post-detail'); }
 
@@ -956,16 +1107,29 @@ async function loadFullImage(postId){
   }catch(err){ console.warn('โหลดรูปเต็มไม่ได้:', err.message); }
 }
 
+/* ลบสำเนาบนบอร์ดสาธารณะ + เลิกปักหมุดของตัวเอง ถ้ามี ใช้ตอนปิดเคส/ลบ/ถูกซ่อน */
+async function removeFromBoard(id){
+  allBoardPosts = allBoardPosts.filter(p => p.id !== id);
+  try{ await deleteDoc(doc(db,'boardPosts',id)); }catch(_){}
+  if (pinnedIds().includes(id)){
+    const next = pinnedIds().filter(x => x !== id);
+    profile = { ...profile, pinnedPostIds: next };
+    try{ await updateDoc(doc(db,'users',CURRENT_UID), { pinnedPostIds: next }); }catch(_){}
+  }
+}
+
 async function markResolved(id){
   if (!confirm(t('detail.resolveConfirm'))) return;
   await updateDoc(doc(db,'posts',id), { status:'resolved' });
   const p = postById(id); if (p) p.status = 'resolved';
+  await removeFromBoard(id);
   rerender();
 }
 async function deleteMyPost(id){
   if (!confirm(t('detail.deleteConfirm'))) return;
   await deleteDoc(doc(db,'posts',id));
   try{ await deleteDoc(doc(db,'postImages',id)); }catch(_){}
+  await removeFromBoard(id);
   allPosts = allPosts.filter(p => p.id !== id);
   showView('mine');
 }
@@ -977,6 +1141,22 @@ function toggleOther(base){
   other.classList.toggle('hidden', !show);
   other.required = show;
   if (show) other.focus(); else other.value = '';
+}
+
+/* ===================== จุดรับของ (เฉพาะประกาศ "พบของ") ===================== */
+function onPostTypeChange(){
+  const isFound = document.querySelector('input[name=ptype]:checked').value === 'found';
+  $('pickupNoteField').classList.toggle('hidden', !isFound);
+  if (!isFound){ $('pPickupNote').value = ''; $('pPickupUnsure').checked = false; $('pPickupNote').disabled = false; }
+}
+function onPickupUnsureChange(){
+  const unsure = $('pPickupUnsure').checked;
+  $('pPickupNote').disabled = unsure;
+  if (unsure) $('pPickupNote').value = t('create.pickupNoteUnsureText');
+  else if ($('pPickupNote').value === t('create.pickupNoteUnsureText')) $('pPickupNote').value = '';
+}
+function onPickupNoteInput(){
+  if ($('pPickupUnsure').checked) $('pPickupUnsure').checked = false;
 }
 function fieldValue(base){
   const sel = $(base);
@@ -1059,6 +1239,15 @@ async function handleCreatePost(e){
     msg.style.color = 'var(--lost)'; msg.textContent = t('create.otherRequired'); return false;
   }
 
+  const ptype = document.querySelector('input[name=ptype]:checked').value;
+  let pickupNote = '';
+  if (ptype === 'found'){
+    pickupNote = $('pPickupUnsure').checked ? t('create.pickupNoteUnsureText') : $('pPickupNote').value.trim();
+    if (!pickupNote){
+      msg.style.color = 'var(--lost)'; msg.textContent = t('create.pickupNoteRequired'); return false;
+    }
+  }
+
   const desc = $('pDesc').value.trim();
   let autoCategorized = false, finalCategory = category;
   if (!hasReadableText(desc)){ finalCategory = 'อื่นๆ'; autoCategorized = true; }
@@ -1068,7 +1257,7 @@ async function handleCreatePost(e){
     authorId: CURRENT_UID,
     authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
     authorEmail: auth.currentUser.email,
-    type: document.querySelector('input[name=ptype]:checked').value,
+    type: ptype,
     category: finalCategory, color, description: desc, location,
     eventDate: $('pDate').value,
     thumbUrl: thumbData || '',
@@ -1076,6 +1265,7 @@ async function handleCreatePost(e){
     status: 'active',
     autoCategorized,
     processed: autoCategorized,
+    pickupNote,
     createdAt: serverTimestamp()
   };
 
@@ -1086,6 +1276,17 @@ async function handleCreatePost(e){
       try{ await setDoc(doc(db,'postImages',ref.id), { authorId: CURRENT_UID, data: imageData }); }
       catch(err){ console.warn('บันทึกรูปเต็มไม่สำเร็จ:', err.message); }
     }
+    // สำเนาย่อขึ้นบอร์ดสาธารณะ (ไม่มีอีเมล/เบอร์โทร/จุดรับของ — เปิดเผยเฉพาะตอนยืนยันแมชแล้วเท่านั้น)
+    const boardData = {
+      authorId: CURRENT_UID, type: ptype,
+      category: finalCategory, color, description: desc, location,
+      eventDate: $('pDate').value, thumbUrl: thumbData || '',
+      status: 'active', createdAt: serverTimestamp()
+    };
+    try{
+      await setDoc(doc(db,'boardPosts',ref.id), boardData);
+      allBoardPosts.unshift({ id:ref.id, ...boardData, createdAt:{ seconds: Math.floor(Date.now()/1000) } });
+    }catch(err){ console.warn('บันทึกลงบอร์ดไม่สำเร็จ:', err.message); }
     try{
       await updateDoc(doc(db,'users',CURRENT_UID), { postCountDate: today, postCountToday: usedToday + 1 });
       profile = { ...profile, postCountDate: today, postCountToday: usedToday + 1 };
@@ -1093,6 +1294,8 @@ async function handleCreatePost(e){
     allPosts.unshift({ id:ref.id, ...data, createdAt:{ seconds: Math.floor(Date.now()/1000) } });
     $('postForm').reset();
     ['pCategory','pColor','pLocation'].forEach(id => { $(id+'Other').classList.add('hidden'); $(id+'Other').required=false; });
+    $('pickupNoteField').classList.add('hidden');
+    $('pPickupNote').disabled = false;
     clearImage('');
     $('pDate').value = new Date().toISOString().slice(0,10);
     msg.style.color = autoCategorized ? 'var(--amber)' : 'var(--found)';
@@ -1161,6 +1364,7 @@ function contactBlock(m, myPost){
   const them = iAmLost ? m.foundContact : m.lostContact;
   const resolved = myPost && myPost.status === 'resolved';
   return `<div class="contactreveal">✓ ${esc(t('match.confirmed', { name: them?.name || '-', email: them?.email || '-' }))}
+    ${(iAmLost && them?.pickupNote) ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.4)"><b>${esc(t('match.pickupNoteLabel'))}:</b> ${esc(them.pickupNote)}</div>` : ''}
     ${resolved ? `<div style="margin-top:6px">✓ ${esc(t('match.closed'))}</div>`
       : (myPost ? `<div style="margin-top:8px"><button class="btn small accent" onclick="markResolved('${myPost.id}')">✓ ${esc(t('match.markReturned'))}</button></div>` : '')}
   </div>`;
@@ -1342,7 +1546,10 @@ async function deleteAccount(){
   if (!confirm(t('profile.deleteConfirm'))) return;
   const msg = $('prDelMsg');
   try{
-    for (const p of allPosts) await deleteDoc(doc(db,'posts',p.id));
+    for (const p of allPosts) {
+      await deleteDoc(doc(db,'posts',p.id));
+      try{ await deleteDoc(doc(db,'boardPosts',p.id)); }catch(_){}
+    }
     await deleteDoc(doc(db,'users',CURRENT_UID));
     await deleteUser(auth.currentUser);
     location.reload();
@@ -1440,12 +1647,14 @@ function renderReports(reports, posts){
 async function adminHidePost(id){
   if (!confirm(t('admin.confirmHide'))) return;
   await updateDoc(doc(db,'posts',id), { status:'resolved', hiddenReason:'admin', hiddenAt: serverTimestamp() });
+  try{ await deleteDoc(doc(db,'boardPosts',id)); }catch(_){}
   renderAdmin();
 }
 async function adminDeletePost(id){
   if (!confirm(t('admin.confirmDelete'))) return;
   await deleteDoc(doc(db,'posts',id));
   try{ await deleteDoc(doc(db,'postImages',id)); }catch(_){}
+  try{ await deleteDoc(doc(db,'boardPosts',id)); }catch(_){}
   renderAdmin();
 }
 async function markReportHandled(id){
@@ -1540,6 +1749,8 @@ Object.assign(window, {
   checkEmailVerified, resendVerification,
   showView, refreshNow, renderMine, openMyPost, markResolved, deleteMyPost,
   toggleOther, previewPostImage, handleCreatePost,
+  onPostTypeChange, onPickupUnsureChange, onPickupNoteInput,
+  renderBoard, togglePin, openBoardPost,
   openMatchPage, matchDecision,
   saveProfile, savePrefs, sendResetFromProfile, deleteAccount,
   openAdminCat, openAdminPost, exportStats,
