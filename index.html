@@ -123,23 +123,23 @@
   .colordot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
   .status-strip{font-size:11px;text-align:center;padding:6px;font-weight:500;background:var(--found);color:#fff}
 
-  /* ---------- บอร์ดประกาศ + ปักหมุด ---------- */
-  .board-section{margin-bottom:26px}
-  .board-section-title{display:flex;align-items:center;gap:8px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;margin-bottom:12px;color:var(--ink)}
-  .pin-btn{position:absolute;top:10px;right:10px;z-index:2;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;box-shadow:var(--shadow-sm);transition:.15s;padding:0}
-  .pin-btn:hover{border-color:var(--purple);background:var(--purple-soft)}
+  /* ---------- ประกาศของฉัน + ปักหมุด ---------- */
+  .mine-pinned-section{margin-bottom:24px;display:none}
+  .mine-pinned-section.show{display:block}
+  .mine-pinned-title{display:flex;align-items:center;gap:8px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;margin-bottom:12px;color:var(--ink)}
+  .mine-pinned-title .pin-star{color:var(--purple);font-size:20px;line-height:1}
+  .mine-pinned-grid{background:var(--paper-2);background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:14px 14px;border-radius:20px;padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+  .mine-card-wrap{position:relative;min-width:0}
+  .mine-card-wrap.pinned:nth-child(odd){transform:rotate(-.7deg)}
+  .mine-card-wrap.pinned:nth-child(even){transform:rotate(.7deg)}
+  .mine-card-wrap .tagcard{width:100%}
+  .mine-card-wrap.pinned .tagcard{box-shadow:var(--shadow)}
+  .pin-btn{position:absolute;top:10px;right:10px;z-index:2;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;line-height:1;cursor:pointer;box-shadow:var(--shadow-sm);transition:.15s;padding:0;color:var(--ink-soft)}
+  .pin-btn:hover{border-color:var(--purple);background:var(--purple-soft);color:var(--purple)}
   .pin-btn.pinned{background:var(--purple);border-color:var(--purple);color:#fff}
-  .board-card-wrap{position:relative}
-  .board-card-wrap .tagcard{width:100%}
-  .mine-flag{position:absolute;top:10px;left:10px;z-index:2;font-size:10.5px;font-weight:600;background:var(--purple-deep);color:#fff;padding:3px 9px;border-radius:999px;box-shadow:var(--shadow-sm)}
-  /* การ์ดที่ปักหมุด: ดูเหมือนกระดาษปักบนบอร์ดจริง เอียงเล็กน้อย + เทปกาวด้านบน */
-  .pinned-grid{background:var(--paper-2);background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:14px 14px;border-radius:20px;padding:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px}
-  .pinned-grid .board-card-wrap{transform:rotate(-1.3deg)}
-  .pinned-grid .board-card-wrap:nth-child(2){transform:rotate(1.1deg)}
-  .pinned-grid .board-card-wrap:nth-child(3){transform:rotate(-0.6deg)}
-  .pinned-grid .board-card-wrap .tagcard{box-shadow:var(--shadow)}
-  .pinned-grid .tape{position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-2deg);width:56px;height:20px;background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 4px rgba(0,0,0,.08);z-index:3}
-  @media (prefers-reduced-motion:reduce){.pinned-grid .board-card-wrap{transform:none}}
+  .pin-btn:focus-visible{outline:3px solid var(--purple-soft);outline-offset:2px}
+  .pin-limit-msg{font-size:12px;color:var(--lost);margin:8px 0 0}
+  @media (prefers-reduced-motion:reduce){.mine-card-wrap.pinned{transform:none}}
 
   /* ---------- จุดรับของ ---------- */
   .pickup-check{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
@@ -361,7 +361,6 @@
 
   <nav class="tabs" data-i18n-aria="nav.menu">
     <button class="active" onclick="showView('mine')" data-tab="mine" data-i18n="nav.mine"></button>
-    <button onclick="showView('board')" data-tab="board" data-i18n="nav.board"></button>
     <button onclick="showView('create')" data-tab="create" data-i18n="nav.create"></button>
     <button onclick="showView('notif')" data-tab="notif"><span data-i18n="nav.notif"></span><span class="badge-count hidden" id="notifBadge">0</span></button>
     <button onclick="showView('matches')" data-tab="matches" data-i18n="nav.matches"></button>
@@ -374,6 +373,7 @@
     <!-- MY POSTS -->
     <section id="view-mine" class="view active">
       <div class="view-head"><h2 data-i18n="mine.title"></h2><div class="sub" data-i18n="mine.sub"></div></div>
+      <div id="minePinnedSection" class="mine-pinned-section"></div>
       <div class="filter-row">
         <label class="sr-only" for="mType" data-i18n="mine.filterType"></label>
         <select id="mType" onchange="renderMine()"></select>
@@ -386,22 +386,6 @@
       </div>
       <p class="sub" id="mineCount" role="status" aria-live="polite" style="margin-bottom:14px"></p>
       <div class="grid" id="mineGrid"></div>
-    </section>
-
-    <!-- BOARD -->
-    <section id="view-board" class="view">
-      <div class="view-head"><h2 data-i18n="board.title"></h2><div class="sub" data-i18n="board.sub"></div></div>
-      <div class="filter-row">
-        <label class="sr-only" for="bType" data-i18n="mine.filterType"></label>
-        <select id="bType" onchange="renderBoard()"></select>
-        <label class="sr-only" for="bCat" data-i18n="mine.filterCat"></label>
-        <select id="bCat" onchange="renderBoard()"></select>
-        <label class="sr-only" for="bQ" data-i18n="mine.search"></label>
-        <input id="bQ" type="search" oninput="renderBoard()" data-i18n-ph="mine.searchPh" style="min-width:230px">
-      </div>
-      <div id="boardPinnedSection" class="board-section"></div>
-      <p class="sub" id="boardCount" role="status" aria-live="polite" style="margin-bottom:14px"></p>
-      <div class="grid" id="boardGrid"></div>
     </section>
 
     <!-- CREATE -->
@@ -610,7 +594,7 @@ const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
 
 let CURRENT_UID = null, profile = null;
-let allPosts = [], allMatches = [], allBoardPosts = [];
+let allPosts = [], allMatches = [];
 let verifyQueue = [], verifyIdx = 0;
 let currentView = 'mine';
 let booted = false;
@@ -682,7 +666,6 @@ function showView(name){
 }
 function rerender(){
   if (currentView === 'mine') renderMine();
-  else if (currentView === 'board') renderBoard();
   else if (currentView === 'notif') renderNotifs();
   else if (currentView === 'matches') renderMatches();
   else if (currentView === 'match-detail') renderMatchDetail();
@@ -863,11 +846,6 @@ async function loadData(){
   const ms = await getDocs(query(collection(db,'matches'), where('participantIds','array-contains',CURRENT_UID)));
   allMatches = ms.docs.map(d => ({ id:d.id, ...d.data() }))
                       .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-  try{
-    const bs = await getDocs(collection(db,'boardPosts'));
-    allBoardPosts = bs.docs.map(d => ({ id:d.id, ...d.data() }))
-                          .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-  }catch(err){ console.warn('โหลดบอร์ดไม่สำเร็จ:', err.message); allBoardPosts = []; }
   updateBadge();
 }
 function pinnedIds(){ return Array.isArray(profile?.pinnedPostIds) ? profile.pinnedPostIds : []; }
@@ -920,48 +898,12 @@ function timeAgo(c){
 }
 function typeLabel(ty){ return ty === 'lost' ? t('common.lost') : t('common.found'); }
 
-function cardHTML(p){
-  return `<button class="tagcard" onclick="openMyPost('${p.id}')">
-    <div class="photo">${p.thumbUrl ? `<img src="${p.thumbUrl}" loading="lazy" alt="${esc(optionLabel('category',p.category))}" onerror="this.parentElement.textContent='${esc(t('common.noImage'))}'">` : esc(t('common.noImage'))}</div>
-    <div class="body">
-      <div class="toprow">
-        <span class="cat">${esc(optionLabel('category', p.category))}</span>
-        <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
-      </div>
-      <div class="desc">${esc(p.description)}</div>
-      <div class="meta">
-        <span><span class="colordot" style="background:${colorHex(p.color)}"></span>${esc(optionLabel('color', p.color))}</span>
-        <span>📍 ${esc(optionLabel('location', p.location))}</span>
-      </div>
-    </div>
-    ${p.status === 'resolved' ? `<div class="status-strip">✓ ${esc(t('common.resolved'))}</div>` : ''}
-  </button>`;
-}
-
-/* ===================== ประกาศของฉัน ===================== */
-function renderMine(){
-  const ty = $('mType').value, ca = $('mCat').value, st = $('mStatus').value;
-  const q = $('mQ').value.trim().toLowerCase();
-  const list = allPosts.filter(p =>
-    (!ty || p.type === ty) && (!ca || p.category === ca) && (!st || p.status === st) &&
-    (!q || ((p.description||'') + ' ' + (p.category||'') + ' ' + (p.location||'')).toLowerCase().includes(q)));
-
-  $('mineCount').textContent = allPosts.length ? t('mine.count', { n:list.length, total:allPosts.length }) : '';
-  $('mineGrid').innerHTML = allPosts.length === 0
-    ? emptyState(t('mine.emptyTitle'), t('mine.emptySub'))
-    : (list.length ? list.map(cardHTML).join('') : emptyState(t('mine.noResultTitle'), t('mine.noResultSub')));
-}
-
-/* ===================== บอร์ดประกาศ + ปักหมุด ===================== */
-function boardCardHTML(p){
+function cardHTML(p, isPinned=false){
   const pinned = pinnedIds().includes(p.id);
-  const isMine = p.authorId === CURRENT_UID;
-  return `<div class="board-card-wrap">
-    ${pinned ? '<div class="tape" aria-hidden="true"></div>' : ''}
-    ${isMine ? `<span class="mine-flag">${esc(t('board.mineTag'))}</span>` : ''}
+  return `<div class="mine-card-wrap ${isPinned ? 'pinned' : ''}">
     <button type="button" class="pin-btn ${pinned?'pinned':''}" onclick="event.stopPropagation();togglePin('${p.id}')"
-      aria-pressed="${pinned}" aria-label="${esc(t(pinned?'board.unpin':'board.pin'))}" title="${esc(t(pinned?'board.unpin':'board.pin'))}">${pinned?'📌':'📍'}</button>
-    <button class="tagcard" onclick="openBoardPost('${p.id}')">
+      aria-pressed="${pinned}" aria-label="${esc(t(pinned?'mine.unpin':'mine.pin'))}" title="${esc(t(pinned?'mine.unpin':'mine.pin'))}">${pinned?'★':'☆'}</button>
+    <button class="tagcard" onclick="openMyPost('${p.id}')">
       <div class="photo">${p.thumbUrl ? `<img src="${p.thumbUrl}" loading="lazy" alt="${esc(optionLabel('category',p.category))}" onerror="this.parentElement.textContent='${esc(t('common.noImage'))}'">` : esc(t('common.noImage'))}</div>
       <div class="body">
         <div class="toprow">
@@ -974,77 +916,57 @@ function boardCardHTML(p){
           <span>📍 ${esc(optionLabel('location', p.location))}</span>
         </div>
       </div>
+      ${p.status === 'resolved' ? `<div class="status-strip">✓ ${esc(t('common.resolved'))}</div>` : ''}
     </button>
   </div>`;
 }
 
-function renderBoard(){
-  const ty = $('bType').value, ca = $('bCat').value;
-  const q = $('bQ').value.trim().toLowerCase();
-  const pins = pinnedIds();
+/* ===================== ประกาศของฉัน + ปักหมุด ===================== */
 
-  const matches = p => (!ty || p.type === ty) && (!ca || p.category === ca) &&
-    (!q || ((p.description||'') + ' ' + (p.category||'') + ' ' + (p.location||'')).toLowerCase().includes(q));
+function renderMine(){
+  const ty = $('mType').value, ca = $('mCat').value, st = $('mStatus').value;
+  const q = $('mQ').value.trim().toLowerCase();
+  const list = allPosts.filter(p =>
+    (!ty || p.type === ty) && (!ca || p.category === ca) && (!st || p.status === st) &&
+    (!q || ((p.description||'') + ' ' + (p.category||'') + ' ' + (p.location||'')).toLowerCase().includes(q)));
 
-  const pinnedPosts = pins.map(id => allBoardPosts.find(p => p.id === id)).filter(Boolean);
-  const rest = allBoardPosts.filter(p => !pins.includes(p.id));
-  const restFiltered = rest.filter(matches);
+  const mineIds = new Set(allPosts.map(p => p.id));
+  const pins = pinnedIds().filter(id => mineIds.has(id));
+  const pinnedPosts = pins.map(id => allPosts.find(p => p.id === id)).filter(Boolean);
+  const rest = list.filter(p => !pins.includes(p.id));
+  const section = $('minePinnedSection');
 
-  $('boardPinnedSection').innerHTML = pinnedPosts.length
-    ? `<div class="board-section-title">${esc(t('board.pinnedTitle'))} (${pinnedPosts.length}/3)</div>
-       <div class="pinned-grid">${pinnedPosts.map(boardCardHTML).join('')}</div>`
-    : '';
+  if (section){
+    section.classList.toggle('show', pinnedPosts.length > 0);
+    section.innerHTML = pinnedPosts.length
+      ? `<div class="mine-pinned-title"><span class="pin-star">★</span>${esc(t('mine.pinnedTitle'))} <span class="sub">(${pinnedPosts.length}/3)</span></div>
+         <div class="mine-pinned-grid">${pinnedPosts.map(p => cardHTML(p, true)).join('')}</div>`
+      : '';
+  }
 
-  $('boardCount').textContent = allBoardPosts.length ? t('mine.count', { n:restFiltered.length, total:rest.length }) : '';
-  $('boardGrid').innerHTML = allBoardPosts.length === 0
-    ? emptyState(t('board.emptyTitle'), t('board.emptySub'))
-    : (restFiltered.length ? restFiltered.map(boardCardHTML).join('')
-      : (rest.length === 0 ? '' : emptyState(t('board.noResultTitle'), t('board.noResultSub'))));
+  $('mineCount').textContent = allPosts.length ? t('mine.count', { n:list.length, total:allPosts.length }) : '';
+  $('mineGrid').innerHTML = allPosts.length === 0
+    ? emptyState(t('mine.emptyTitle'), t('mine.emptySub'))
+    : (list.length ? rest.map(p => cardHTML(p, false)).join('') || emptyState(t('mine.noResultTitle'), t('mine.noResultSub')) : emptyState(t('mine.noResultTitle'), t('mine.noResultSub')));
 }
 
 async function togglePin(id){
-  const pins = pinnedIds();
+  const post = postById(id);
+  if (!post || post.authorId !== CURRENT_UID) return;
+  const pins = pinnedIds().filter(pid => allPosts.some(p => p.id === pid));
   let next;
   if (pins.includes(id)) {
     next = pins.filter(x => x !== id);
   } else {
-    if (pins.length >= 3) { alert(t('board.pinLimit')); return; }
+    if (pins.length >= 3) { alert(t('mine.pinLimit')); return; }
     next = [...pins, id];
   }
   profile = { ...profile, pinnedPostIds: next };
-  renderBoard();
+  renderMine();
   try{ await updateDoc(doc(db,'users',CURRENT_UID), { pinnedPostIds: next }); }
   catch(err){ console.warn('บันทึกการปักหมุดไม่สำเร็จ:', err.message); }
 }
 
-function openBoardPost(id){
-  const p = allBoardPosts.find(x => x.id === id);
-  if (!p) return;
-  if (p.authorId === CURRENT_UID) { openMyPost(id); return; }
-  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="this.remove()">
-    <div class="modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
-        <button class="btn small" onclick="this.closest('.modal-bg').remove()">${esc(t('common.close'))}</button>
-      </div>
-      <h3 style="font-size:18px;margin:12px 0 4px">${esc(optionLabel('category', p.category))}</h3>
-      ${p.thumbUrl ? `<img src="${p.thumbUrl}" alt="" style="width:100%;border-radius:12px;margin:8px 0;max-height:220px;object-fit:cover">` : ''}
-      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">
-        <span class="colordot" style="background:${colorHex(p.color)}"></span>${esc(optionLabel('color', p.color))}
-      </div>
-      <div style="font-size:14px;line-height:1.6">${esc(p.description)}</div>
-      <div class="note-box" style="margin-top:14px">
-        <div>📍 <b>${esc(t('detail.location'))}:</b> ${esc(optionLabel('location', p.location))}</div>
-        <div>📅 <b>${esc(t('detail.date'))}:</b> ${fmtDate(p.eventDate)}</div>
-        <div>🕒 <b>${esc(t('detail.posted'))}:</b> ${esc(timeAgo(p.createdAt))}</div>
-      </div>
-      <div style="margin-top:14px;text-align:center">
-        <button class="btn small" onclick="openReport('${p.id}')">${esc(t('report.button'))}</button>
-      </div>
-    </div></div>`;
-}
-
-let detailPostId = null;
 function openMyPost(id){ detailPostId = id; showView('post-detail'); }
 
 function renderPostDetail(){
@@ -1108,28 +1030,25 @@ async function loadFullImage(postId){
 }
 
 /* ลบสำเนาบนบอร์ดสาธารณะ + เลิกปักหมุดของตัวเอง ถ้ามี ใช้ตอนปิดเคส/ลบ/ถูกซ่อน */
-async function removeFromBoard(id){
-  allBoardPosts = allBoardPosts.filter(p => p.id !== id);
-  try{ await deleteDoc(doc(db,'boardPosts',id)); }catch(_){}
-  if (pinnedIds().includes(id)){
-    const next = pinnedIds().filter(x => x !== id);
-    profile = { ...profile, pinnedPostIds: next };
-    try{ await updateDoc(doc(db,'users',CURRENT_UID), { pinnedPostIds: next }); }catch(_){}
-  }
+async function clearPinnedPost(id){
+  if (!pinnedIds().includes(id)) return;
+  const next = pinnedIds().filter(x => x !== id);
+  profile = { ...profile, pinnedPostIds: next };
+  try{ await updateDoc(doc(db,'users',CURRENT_UID), { pinnedPostIds: next }); }catch(_){ }
 }
 
 async function markResolved(id){
   if (!confirm(t('detail.resolveConfirm'))) return;
   await updateDoc(doc(db,'posts',id), { status:'resolved' });
   const p = postById(id); if (p) p.status = 'resolved';
-  await removeFromBoard(id);
+  await clearPinnedPost(id);
   rerender();
 }
 async function deleteMyPost(id){
   if (!confirm(t('detail.deleteConfirm'))) return;
   await deleteDoc(doc(db,'posts',id));
   try{ await deleteDoc(doc(db,'postImages',id)); }catch(_){}
-  await removeFromBoard(id);
+  await clearPinnedPost(id);
   allPosts = allPosts.filter(p => p.id !== id);
   showView('mine');
 }
@@ -1276,17 +1195,6 @@ async function handleCreatePost(e){
       try{ await setDoc(doc(db,'postImages',ref.id), { authorId: CURRENT_UID, data: imageData }); }
       catch(err){ console.warn('บันทึกรูปเต็มไม่สำเร็จ:', err.message); }
     }
-    // สำเนาย่อขึ้นบอร์ดสาธารณะ (ไม่มีอีเมล/เบอร์โทร/จุดรับของ — เปิดเผยเฉพาะตอนยืนยันแมชแล้วเท่านั้น)
-    const boardData = {
-      authorId: CURRENT_UID, type: ptype,
-      category: finalCategory, color, description: desc, location,
-      eventDate: $('pDate').value, thumbUrl: thumbData || '',
-      status: 'active', createdAt: serverTimestamp()
-    };
-    try{
-      await setDoc(doc(db,'boardPosts',ref.id), boardData);
-      allBoardPosts.unshift({ id:ref.id, ...boardData, createdAt:{ seconds: Math.floor(Date.now()/1000) } });
-    }catch(err){ console.warn('บันทึกลงบอร์ดไม่สำเร็จ:', err.message); }
     try{
       await updateDoc(doc(db,'users',CURRENT_UID), { postCountDate: today, postCountToday: usedToday + 1 });
       profile = { ...profile, postCountDate: today, postCountToday: usedToday + 1 };
@@ -1548,7 +1456,6 @@ async function deleteAccount(){
   try{
     for (const p of allPosts) {
       await deleteDoc(doc(db,'posts',p.id));
-      try{ await deleteDoc(doc(db,'boardPosts',p.id)); }catch(_){}
     }
     await deleteDoc(doc(db,'users',CURRENT_UID));
     await deleteUser(auth.currentUser);
@@ -1647,14 +1554,12 @@ function renderReports(reports, posts){
 async function adminHidePost(id){
   if (!confirm(t('admin.confirmHide'))) return;
   await updateDoc(doc(db,'posts',id), { status:'resolved', hiddenReason:'admin', hiddenAt: serverTimestamp() });
-  try{ await deleteDoc(doc(db,'boardPosts',id)); }catch(_){}
   renderAdmin();
 }
 async function adminDeletePost(id){
   if (!confirm(t('admin.confirmDelete'))) return;
   await deleteDoc(doc(db,'posts',id));
   try{ await deleteDoc(doc(db,'postImages',id)); }catch(_){}
-  try{ await deleteDoc(doc(db,'boardPosts',id)); }catch(_){}
   renderAdmin();
 }
 async function markReportHandled(id){
@@ -1750,7 +1655,7 @@ Object.assign(window, {
   showView, refreshNow, renderMine, openMyPost, markResolved, deleteMyPost,
   toggleOther, previewPostImage, handleCreatePost,
   onPostTypeChange, onPickupUnsureChange, onPickupNoteInput,
-  renderBoard, togglePin, openBoardPost,
+  togglePin,
   openMatchPage, matchDecision,
   saveProfile, savePrefs, sendResetFromProfile, deleteAccount,
   openAdminCat, openAdminPost, exportStats,
