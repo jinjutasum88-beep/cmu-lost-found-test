@@ -232,7 +232,7 @@
   .admin-post-row .info h3{margin:7px 0 6px;font-size:16px}
   .admin-post-row .info p{margin:0 0 7px;font-size:12px;color:var(--ink-soft);line-height:1.5}
 
-  /* ลูกเล่นที่ 3: ปุ่มกดลงประกาศสำเร็จ ปรับแต่งสถานะ Loading และ Checkmark Animation[cite: 7] */
+  /* ลูกเล่นที่ 3: ปุ่มกดลงประกาศสำเร็จ ปรับแต่งสถานะ Loading[cite: 7] */
   .btn-submit-wrap{position:relative;width:100%}
   .fake-spinner{display:none;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;margin:0 auto}
   .btn.loading .btn-label{display:none} 
@@ -598,6 +598,7 @@ const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
 
 let CURRENT_UID = null, profile = null;
+let detailPostId = null; // แก้ไข: ประกาศตัวแปรเก็บรหัสโพสต์เพื่อรองรับการกดดูรายละเอียด
 let allPosts = [], allMatches = [];
 let verifyQueue = [], verifyIdx = 0;
 let currentView = 'mine';
@@ -974,7 +975,10 @@ async function togglePin(id){
   catch(err){ console.warn('บันทึกการปักหมุดไม่สำเร็จ:', err.message); }
 }
 
-function openMyPost(id){ detailPostId = id; showView('post-detail'); }
+function openMyPost(id){ 
+  detailPostId = id; 
+  showView('post-detail'); 
+}
 
 function renderPostDetail(){
   const p = postById(detailPostId);
