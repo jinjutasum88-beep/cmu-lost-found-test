@@ -628,7 +628,6 @@ function fillSelects(){
   const keep = id => $(id) ? $(id).value : '';
   const kCat = keep('pCategory'), kColor = keep('pColor'), kLoc = keep('pLocation');
   const kmT = keep('mType'), kmC = keep('mCat'), kmS = keep('mStatus');
-  const kbT = keep('bType'), kbC = keep('bCat');
 
   $('pCategory').innerHTML = `<option value="">${esc(t('create.categoryPick'))}</option>` + opts(CATEGORIES,'category');
   $('pColor').innerHTML = `<option value="">${esc(t('create.colorPick'))}</option>` + opts(COLORS,'color');
@@ -636,12 +635,9 @@ function fillSelects(){
   $('mType').innerHTML = `<option value="">${esc(t('mine.allTypes'))}</option><option value="lost">${esc(t('common.lost'))}</option><option value="found">${esc(t('common.found'))}</option>`;
   $('mCat').innerHTML = `<option value="">${esc(t('mine.allCats'))}</option>` + opts(CATEGORIES,'category');
   $('mStatus').innerHTML = `<option value="">${esc(t('mine.allStatus'))}</option><option value="active">${esc(t('common.active'))}</option><option value="resolved">${esc(t('common.resolved'))}</option>`;
-  $('bType').innerHTML = `<option value="">${esc(t('mine.allTypes'))}</option><option value="lost">${esc(t('common.lost'))}</option><option value="found">${esc(t('common.found'))}</option>`;
-  $('bCat').innerHTML = `<option value="">${esc(t('mine.allCats'))}</option>` + opts(CATEGORIES,'category');
 
   $('pCategory').value = kCat; $('pColor').value = kColor; $('pLocation').value = kLoc;
   $('mType').value = kmT; $('mCat').value = kmC; $('mStatus').value = kmS;
-  $('bType').value = kbT; $('bCat').value = kbC;
 }
 
 /* ===================== สลับหน้าจอ ===================== */
