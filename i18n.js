@@ -1,5 +1,5 @@
 /* ===================================================================
-   i18n.js — ระบบสองภาษา ไทย / English
+   i18n.js — ระบบสองภาษา ไทย / English (ฉบับอัปเดตสมบูรณ์)
    -------------------------------------------------------------------
    วิธีใช้ใน HTML:
      <h2 data-i18n="mine.title"></h2>          → ใส่ข้อความ
@@ -10,7 +10,7 @@
      t('mine.title')                            → คืนข้อความตามภาษาปัจจุบัน
      t('match.similarity', { pct: 79 })         → แทนค่าใน {pct}
 
-   หมายเหตุสำคัญ: ค่าที่บันทึกลงฐานข้อมูล (หมวดหมู่ สี สถานที่)
+   หมายเหตุสำคัญ: ค่าที่บันทึกลงฐานข้อมูล (หมวดหมู่ สี สถานที่ คณะ)
    ใช้ภาษาไทยเป็นค่าหลักเสมอ ไม่ว่าผู้ใช้จะเลือกภาษาอะไร
    เพราะระบบจับคู่ NLP ต้องเทียบกับค่าเดียวกัน
    =================================================================== */
@@ -104,19 +104,17 @@ const DICT = {
 
     /* ---------- เมนู ---------- */
     "nav.mine": "ประกาศของฉัน",
-    "nav.board": "บอร์ดประกาศ",
     "nav.create": "ลงประกาศ",
     "nav.notif": "การแจ้งเตือน",
     "nav.matches": "รายการที่จับคู่",
-    "nav.profile": "ตั้งค่าโปรไฟล์",
     "nav.admin": "แดชบอร์ดแอดมิน",
     "nav.logout": "ออกจากระบบ",
     "nav.refresh": "ดึงข้อมูลล่าสุด",
     "nav.menu": "เมนูหลัก",
 
-/* ---------- ประกาศของฉัน ---------- */
-"mine.title": "ประกาศของฉัน",
-"mine.sub": "เฉพาะคุณเท่านั้นที่มองเห็น และระบบจะจับคู่กับประกาศของคนอื่นให้อัตโนมัติ",
+    /* ---------- ประกาศของฉัน ---------- */
+    "mine.title": "ประกาศของฉัน",
+    "mine.sub": "เฉพาะคุณเท่านั้นที่มองเห็น และระบบจะจับคู่กับประกาศของคนอื่นให้อัตโนมัติ",
     "mine.filterType": "กรองตามประเภท",
     "mine.filterCat": "กรองตามหมวดหมู่",
     "mine.filterStatus": "กรองตามสถานะ",
@@ -134,19 +132,6 @@ const DICT = {
     "mine.pin": "ปักหมุด",
     "mine.unpin": "เลิกปักหมุด",
     "mine.pinLimit": "ปักหมุดได้สูงสุด 3 รายการ กรุณาเลิกปักหมุดรายการเก่าก่อนนะคะ",
-
-    /* ---------- บอร์ดประกาศ ---------- */
-    "board.title": "บอร์ดประกาศ",
-    "board.sub": "ดูของหาย/ของพบทั้งหมดในระบบ กดปักหมุดรายการที่อยากติดตามไว้ได้สูงสุด 3 รายการ",
-    "board.pinnedTitle": "📌 ปักหมุดไว้",
-    "board.pin": "ปักหมุด",
-    "board.unpin": "เลิกปักหมุด",
-    "board.pinLimit": "ปักหมุดได้สูงสุด 3 รายการ กรุณาเลิกปักหมุดรายการเก่าก่อนนะคะ",
-    "board.mineTag": "ของฉัน",
-    "board.emptyTitle": "ยังไม่มีประกาศในระบบ",
-    "board.emptySub": "เมื่อมีคนลงประกาศ จะแสดงที่นี่",
-    "board.noResultTitle": "ไม่พบประกาศที่ตรงกับตัวกรอง",
-    "board.noResultSub": "ลองเปลี่ยนคำค้นหรือล้างตัวกรอง",
 
     /* ---------- ลงประกาศ ---------- */
     "create.title": "ลงประกาศใหม่",
@@ -230,42 +215,18 @@ const DICT = {
     "match.closed": "ปิดเคสแล้ว (ได้รับของคืนแล้ว)",
     "match.markReturned": "ทำเครื่องหมายว่าได้รับของคืนแล้ว",
 
-    /* ---------- โปรไฟล์ ---------- */
-    "profile.title": "ตั้งค่าโปรไฟล์",
-    "profile.sub": "จัดการข้อมูลส่วนตัว การแจ้งเตือน และความปลอดภัยของบัญชี",
-    "profile.info": "ข้อมูลส่วนตัว",
-    "profile.displayName": "ชื่อที่แสดง",
+    /* ---------- โปรไฟล์ / ตั้งค่า ---------- */
     "profile.displayNameHint": "ชื่อนี้จะแสดงให้อีกฝ่ายเห็นเมื่อจับคู่สำเร็จแล้วเท่านั้น",
-    "profile.email": "อีเมล",
-    "profile.emailFixed": "เปลี่ยนไม่ได้ เพราะผูกกับการยืนยันตัวตน",
-    "profile.phone": "เบอร์ติดต่อ (ไม่บังคับ)",
-    "profile.phonePh": "08X-XXX-XXXX",
-    "profile.phoneHint": "แสดงให้อีกฝ่ายเห็นเฉพาะเมื่อยืนยันการจับคู่แล้ว ปล่อยว่างได้ถ้าไม่ต้องการ",
-    "profile.faculty": "คณะ (ไม่บังคับ)",
-    "profile.facultyPh": "เช่น คณะบริหารธุรกิจ",
-    "profile.saved": "บันทึกข้อมูลเรียบร้อยแล้ว",
+    "profile.emailFixed": "ไม่สามารถแก้ไขอีเมลได้",
+    "profile.saved": "บันทึกข้อมูลสำเร็จ",
     "profile.saveFail": "บันทึกไม่สำเร็จ: {msg}",
-
-    "profile.prefs": "การแจ้งเตือนและการแสดงผล",
-    "profile.notifyEmail": "ส่งอีเมลแจ้งเตือนเมื่อระบบพบของที่อาจตรงกัน",
-    "profile.notifyEmailHint": "ถ้าปิด จะเห็นการแจ้งเตือนในเว็บอย่างเดียว",
-    "profile.language": "ภาษาที่ใช้แสดงผล",
-
-    "profile.security": "ความปลอดภัย",
-    "profile.changePw": "เปลี่ยนรหัสผ่าน",
-    "profile.changePwHint": "ระบบจะส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่อีเมลของคุณ",
-    "profile.sendResetLink": "ส่งลิงก์เปลี่ยนรหัสผ่าน",
-    "profile.resetSent": "ส่งลิงก์ไปที่อีเมลของคุณแล้ว",
-
-    "profile.danger": "ลบบัญชี",
-    "profile.dangerHint": "ลบบัญชีและประกาศทั้งหมดของคุณออกจากระบบอย่างถาวร ย้อนกลับไม่ได้",
-    "profile.deleteAccount": "ลบบัญชีของฉัน",
-    "profile.deleteConfirm": "ยืนยันลบบัญชีถาวร? ประกาศทั้งหมดของคุณจะถูกลบด้วย และกู้คืนไม่ได้",
-    "profile.deleteRelogin": "เพื่อความปลอดภัย กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ ก่อนลบบัญชี",
+    "profile.resetSent": "ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว",
+    "profile.deleteConfirm": "ยืนยันการลบบัญชีผู้ใช้นี้หรือไม่?",
+    "profile.deleteRelogin": "กรุณาเข้าสู่ระบบใหม่อีกครั้งก่อนทำรายการนี้",
 
     /* ---------- แอดมิน ---------- */
     "admin.title": "แดชบอร์ดผู้ดูแลระบบ",
-    "admin.sub": "เลือกประเภทที่ต้องการดู ระบบจะเปิดเป็นหน้าแยกเพื่อดูรายละเอียด",
+    "admin.sub": "ภาพรวมระบบและการจัดการประกาศทั้งหมด",
     "admin.smartTitle": "ความคืบหน้าเทียบกับ SMART Goal",
     "admin.users": "ผู้ใช้ที่ลงทะเบียน",
     "admin.posts": "ประกาศทั้งหมดในระบบ",
@@ -367,18 +328,16 @@ const DICT = {
     "verify.spamTip3": "The sender is noreply@cmu-lost-found-final.firebaseapp.com — mark it \"Not spam\" so future emails reach your inbox.",
 
     "nav.mine": "My posts",
-    "nav.board": "Board",
     "nav.create": "New post",
     "nav.notif": "Notifications",
     "nav.matches": "Matches",
-    "nav.profile": "Profile settings",
     "nav.admin": "Admin dashboard",
     "nav.logout": "Sign out",
     "nav.refresh": "Refresh data",
     "nav.menu": "Main menu",
 
     "mine.title": "My posts",
-     "mine.sub": "Only you can see these, and matching against other people's posts happens automatically",
+    "mine.sub": "Only you can see these, and matching against other people's posts happens automatically",
     "mine.filterType": "Filter by type",
     "mine.filterCat": "Filter by category",
     "mine.filterStatus": "Filter by status",
@@ -392,22 +351,10 @@ const DICT = {
     "mine.emptySub": "Go to the New post tab to get started",
     "mine.noResultTitle": "No posts match your filters",
     "mine.noResultSub": "Try different keywords or clear the filters",
-     "mine.pinnedTitle": "Pinned",
-"mine.pin": "Pin",
-"mine.unpin": "Unpin",
-"mine.pinLimit": "You can pin up to 3 items — unpin one first.",
-
-    "board.title": "Community board",
-    "board.sub": "Browse every lost & found post in the system. Pin up to 3 items you want to keep an eye on.",
-    "board.pinnedTitle": "📌 Pinned",
-    "board.pin": "Pin",
-    "board.unpin": "Unpin",
-    "board.pinLimit": "You can pin up to 3 items — unpin one first.",
-    "board.mineTag": "Mine",
-    "board.emptyTitle": "No posts in the system yet",
-    "board.emptySub": "Posts will appear here once someone creates one",
-    "board.noResultTitle": "No posts match your filters",
-    "board.noResultSub": "Try different keywords or clear the filters",
+    "mine.pinnedTitle": "Pinned",
+    "mine.pin": "Pin",
+    "mine.unpin": "Unpin",
+    "mine.pinLimit": "You can pin up to 3 items — unpin one first.",
 
     "create.title": "Create a new post",
     "create.typeLost": "🔴 I lost something",
@@ -487,40 +434,18 @@ const DICT = {
     "match.closed": "Case closed (item returned)",
     "match.markReturned": "Mark as returned",
 
-    "profile.title": "Profile settings",
-    "profile.sub": "Manage your personal details, notifications and account security",
-    "profile.info": "Personal details",
-    "profile.displayName": "Display name",
+    /* ---------- โปรไฟล์ / ตั้งค่า ---------- */
     "profile.displayNameHint": "Shown to the other party only after a match is confirmed",
-    "profile.email": "Email",
-    "profile.emailFixed": "Cannot be changed — it's tied to your identity verification",
-    "profile.phone": "Contact number (optional)",
-    "profile.phonePh": "08X-XXX-XXXX",
-    "profile.phoneHint": "Shared with the other party only after a confirmed match. Leave blank if you prefer not to.",
-    "profile.faculty": "Faculty (optional)",
-    "profile.facultyPh": "e.g. Faculty of Business Administration",
-    "profile.saved": "Your details have been saved",
+    "profile.emailFixed": "Cannot be changed",
+    "profile.saved": "Saved successfully",
     "profile.saveFail": "Could not save: {msg}",
+    "profile.resetSent": "Password reset link sent to your email",
+    "profile.deleteConfirm": "Permanently delete this account?",
+    "profile.deleteRelogin": "Please sign in again before performing this action",
 
-    "profile.prefs": "Notifications and display",
-    "profile.notifyEmail": "Email me when the system finds a possible match",
-    "profile.notifyEmailHint": "If turned off, you'll only see notifications on the website",
-    "profile.language": "Display language",
-
-    "profile.security": "Security",
-    "profile.changePw": "Change password",
-    "profile.changePwHint": "We'll send a password reset link to your email",
-    "profile.sendResetLink": "Send reset link",
-    "profile.resetSent": "A link has been sent to your email",
-
-    "profile.danger": "Delete account",
-    "profile.dangerHint": "Permanently delete your account and all of your posts. This cannot be undone.",
-    "profile.deleteAccount": "Delete my account",
-    "profile.deleteConfirm": "Permanently delete your account? All of your posts will be deleted and cannot be recovered.",
-    "profile.deleteRelogin": "For security, please sign out and sign in again before deleting your account.",
-
+    /* ---------- แอดมิน ---------- */
     "admin.title": "Admin dashboard",
-    "admin.sub": "Pick a category to open a detailed view",
+    "admin.sub": "System overview and post management",
     "admin.smartTitle": "Progress against SMART Goals",
     "admin.users": "Registered users",
     "admin.posts": "Total posts",
@@ -567,7 +492,7 @@ export const OPTION_LABELS = {
     "สวนสัก": "Suan Sak",
     "ลานอ่างแก้ว": "Ang Kaew reservoir",
     "หอประชุมมหาวิทยาลัย": "University Convention Hall",
-    "ตลาดข่วงเชียงใหม่ (ตลาดหน้ามอ)": "Khuang Chiang Mai market",
+    "กาดหน้ามอ": "Khuang Chiang Mai market",
     "จุดจอดรถ ขสมช.": "Campus shuttle stop",
     "สนามกีฬามหาวิทยาลัย": "University stadium",
     "อื่นๆ": "Other"
