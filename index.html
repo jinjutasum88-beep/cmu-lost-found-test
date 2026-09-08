@@ -224,7 +224,6 @@
   .panel .psub{color:var(--ink-soft);font-size:12.5px;margin:0 0 18px;line-height:1.7}
   .panel.danger{border:1.5px solid var(--lost-soft)}
   
-  /* สไตล์ Select ในหน้าโปรไฟล์ให้เป็น Dropdown สวยงาม */
   .panel select{
     width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;
     font-family:inherit;font-size:14.5px;
@@ -560,7 +559,7 @@
   <footer class="foot" data-i18n="app.footer"></footer>
 </div>
 
-<!-- SETTINGS MODAL CONTAINER (แยกหน้าตั้งค่าเป็นสัดส่วน) -->
+<!-- SETTINGS MODAL CONTAINER -->
 <div id="settingsModal" class="modal-bg hidden" onclick="closeSettingsModal()">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px">
@@ -609,13 +608,41 @@ const CATEGORIES = ["กระเป๋า","กุญแจ","โทรศั�
 const COLORS = ["ดำ","ขาว","แดง","น้ำเงิน","เขียว","เหลือง","ชมพู","เทา","น้ำตาล","อื่นๆ"];
 const PLACES = ["หอสมุดกลาง","คณะวิศวกรรมศาสตร์","คณะมนุษยศาสตร์","คณะบริหารธุรกิจ","คณะวิทยาศาสตร์","หอพักนักศึกษา (หอใน)","ศาลาอ่างแก้ว/โรงอาหาร","อาคาร 40 ปี","สวนสัก","ลานอ่างแก้ว","หอประชุมมหาวิทยาลัย","กาดหน้ามอ","จุดจอดรถ ขสมช.","สนามกีฬามหาวิทยาลัย","อื่นๆ"];
 
+// รายชื่อคณะและวิทยาลัยทั้งหมดของมหาวิทยาลัยเชียงใหม่
+const CMU_FACULTIES = [
+  "คณะมนุษยศาสตร์",
+  "คณะศึกษาศาสตร์",
+  "คณะวิจิตรศิลป์",
+  "คณะสังคมศาสตร์",
+  "คณะวิทยาศาสตร์",
+  "คณะวิศวกรรมศาสตร์",
+  "คณะแพทยศาสตร์",
+  "คณะเกษตรศาสตร์",
+  "คณะทันตแพทยศาสตร์",
+  "คณะเภสัชศาสตร์",
+  "คณะเทคนิคการแพทย์",
+  "คณะพยาบาลศาสตร์",
+  "คณะอุตสาหกรรมเกษตร",
+  "คณะสัตวแพทยศาสตร์",
+  "คณะบริหารธุรกิจ",
+  "คณะเศรษฐศาสตร์",
+  "คณะสถาปัตยกรรมศาสตร์",
+  "คณะการสื่อสารมวลชน",
+  "คณะรัฐศาสตร์และรัฐประศาสนศาสตร์",
+  "คณะนิติศาสตร์",
+  "วิทยาลัยศิลปะ สื่อ และเทคโนโลยี (CAMT)",
+  "วิทยาลัยนานาชาตินวัตกรรมดิจิทัล (IICD)",
+  "วิทยาลัยพหุวิทยาการและสหวิทยาการ",
+  "อื่นๆ"
+];
+
 initLang();
 function paintLangButtons(){
   const label = getLang() === 'th' ? 'EN' : 'ไทย';
   ['langBtnAuth','langBtnVerify','langBtnApp'].forEach(id => { if($(id)) $(id).textContent = label; });
 }
 function toggleLang(){ setLang(getLang() === 'th' ? 'en' : 'th'); }
-function setLangFromProfile(v){ setLang(v); savePrefs(); }
+function setLangFromProfile(v){ setLang(v); savePrefsModal(); }
 
 document.addEventListener('langchange', () => {
   paintLangButtons();
@@ -652,6 +679,10 @@ function openSettingsModal(type){
 
   if (type === 'profile'){
     titleEl.textContent = '👤 ตั้งค่าข้อมูลส่วนตัว';
+    
+    // สร้างตัวเลือกคณะทั้งหมดจากอาเรย์ CMU_FACULTIES
+    const facultyOptions = CMU_FACULTIES.map(fac => `<option value="${esc(fac)}">${esc(fac)}</option>`).join('');
+
     contentEl.innerHTML = `
       <div class="panel" style="box-shadow:none;padding:0;max-width:100%">
         <p class="psub" data-i18n="profile.displayNameHint"></p>
@@ -671,12 +702,8 @@ function openSettingsModal(type){
         <div class="field">
           <label for="prFaculty" data-i18n="profile.faculty"></label>
           <select id="prFaculty">
-            <option value="">กรุณาเลือกคณะ</option>
-            <option value="คณะวิศวกรรมศาสตร์">คณะวิศวกรรมศาสตร์</option>
-            <option value="คณะมนุษยศาสตร์">คณะมนุษยศาสตร์</option>
-            <option value="คณะบริหารธุรกิจ">คณะบริหารธุรกิจ</option>
-            <option value="คณะวิทยาศาสตร์">คณะวิทยาศาสตร์</option>
-            <option value="อื่นๆ">อื่นๆ</option>
+            <option value="">กรุณาเลือกคณะ / วิทยาลัย</option>
+            ${facultyOptions}
           </select>
         </div>
         <button class="btn primary" onclick="saveProfileModal()" id="prSaveBtn" style="margin-top:10px" data-i18n="common.save">บันทึก</button>
