@@ -130,6 +130,10 @@ const DICT = {
     "mine.emptySub": "กดแท็บ ลงประกาศ เพื่อเริ่มต้น",
     "mine.noResultTitle": "ไม่พบประกาศที่ตรงกับตัวกรอง",
     "mine.noResultSub": "ลองเปลี่ยนคำค้นหรือล้างตัวกรอง",
+    "mine.pinnedTitle": "★ ปักหมุดไว้",
+    "mine.pin": "ปักหมุด",
+    "mine.unpin": "เลิกปักหมุด",
+    "mine.pinLimit": "ปักหมุดได้สูงสุด 3 รายการ กรุณาเลิกปักหมุดรายการเก่าก่อนนะคะ",
 
     /* ---------- บอร์ดประกาศ ---------- */
     "board.title": "บอร์ดประกาศ",
@@ -388,6 +392,10 @@ const DICT = {
     "mine.emptySub": "Go to the New post tab to get started",
     "mine.noResultTitle": "No posts match your filters",
     "mine.noResultSub": "Try different keywords or clear the filters",
+     "mine.pinnedTitle": "★ Pinned",
+"mine.pin": "Pin",
+"mine.unpin": "Unpin",
+"mine.pinLimit": "You can pin up to 3 items — unpin one first.",
 
     "board.title": "Community board",
     "board.sub": "Browse every lost & found post in the system. Pin up to 3 items you want to keep an eye on.",
