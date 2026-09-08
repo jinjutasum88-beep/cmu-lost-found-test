@@ -104,6 +104,7 @@ const DICT = {
 
     /* ---------- เมนู ---------- */
     "nav.mine": "ประกาศของฉัน",
+    "nav.board": "บอร์ดประกาศ",
     "nav.create": "ลงประกาศ",
     "nav.notif": "การแจ้งเตือน",
     "nav.matches": "รายการที่จับคู่",
@@ -129,6 +130,19 @@ const DICT = {
     "mine.emptySub": "กดแท็บ ลงประกาศ เพื่อเริ่มต้น",
     "mine.noResultTitle": "ไม่พบประกาศที่ตรงกับตัวกรอง",
     "mine.noResultSub": "ลองเปลี่ยนคำค้นหรือล้างตัวกรอง",
+
+    /* ---------- บอร์ดประกาศ ---------- */
+    "board.title": "บอร์ดประกาศ",
+    "board.sub": "ดูของหาย/ของพบทั้งหมดในระบบ กดปักหมุดรายการที่อยากติดตามไว้ได้สูงสุด 3 รายการ",
+    "board.pinnedTitle": "📌 ปักหมุดไว้",
+    "board.pin": "ปักหมุด",
+    "board.unpin": "เลิกปักหมุด",
+    "board.pinLimit": "ปักหมุดได้สูงสุด 3 รายการ กรุณาเลิกปักหมุดรายการเก่าก่อนนะคะ",
+    "board.mineTag": "ของฉัน",
+    "board.emptyTitle": "ยังไม่มีประกาศในระบบ",
+    "board.emptySub": "เมื่อมีคนลงประกาศ จะแสดงที่นี่",
+    "board.noResultTitle": "ไม่พบประกาศที่ตรงกับตัวกรอง",
+    "board.noResultSub": "ลองเปลี่ยนคำค้นหรือล้างตัวกรอง",
 
     /* ---------- ลงประกาศ ---------- */
     "create.title": "ลงประกาศใหม่",
@@ -158,6 +172,12 @@ const DICT = {
     "create.imgReady": "พร้อมอัปโหลด (ย่อเหลือ {kb} KB)",
     "create.imgFail": "อ่านไฟล์รูปไม่สำเร็จ ลองเลือกไฟล์อื่น",
     "create.otherRequired": "กรุณาพิมพ์รายละเอียดในช่อง \"อื่นๆ\"",
+    "create.pickupNote": "จุดรับของ / วิธีติดต่อขอรับคืน",
+    "create.pickupNotePh": "เช่น ฝากไว้ที่ป้อมยาม ตึกวิศวะ ชั้น 1, ติดต่อรับได้ที่ห้องกิจการนักศึกษา",
+    "create.pickupNoteHint": "จะเปิดเผยให้เจ้าของเห็นก็ต่อเมื่อยืนยันการจับคู่แล้วเท่านั้น ช่วยให้เจ้าของรู้ทันทีว่าต้องไปรับของที่ไหน ไม่ต้องทักไปถามอีกที",
+    "create.pickupNoteUnsure": "ยังไม่แน่ใจตอนนี้ จะติดต่อไปแจ้งเอง",
+    "create.pickupNoteUnsureText": "ผู้เก็บของยังไม่ได้ระบุจุดรับ จะติดต่อไปแจ้งอีกครั้งหลังยืนยันการจับคู่",
+    "create.pickupNoteRequired": "กรุณาระบุจุดรับของ หรือติ๊กว่ายังไม่แน่ใจ",
 
     /* ---------- รายละเอียดประกาศ ---------- */
     "detail.title": "รายละเอียดประกาศ",
@@ -201,6 +221,7 @@ const DICT = {
     "match.allDoneSub": "หากยังไม่พบของ ระบบจะแจ้งเตือนอีกครั้งเมื่อมีรายการใหม่เข้ามา",
     "match.backToList": "กลับรายการจับคู่",
     "match.confirmed": "ยืนยันแล้วว่าตรงกัน — ติดต่อ {name} ที่อีเมล {email}",
+    "match.pickupNoteLabel": "📍 จุดรับของ",
     "match.revealPending": "ยืนยันแล้ว · ระบบกำลังเตรียมข้อมูลติดต่อ จะส่งอีเมลให้ทั้งสองฝ่ายภายในไม่กี่นาที",
     "match.closed": "ปิดเคสแล้ว (ได้รับของคืนแล้ว)",
     "match.markReturned": "ทำเครื่องหมายว่าได้รับของคืนแล้ว",
@@ -342,6 +363,7 @@ const DICT = {
     "verify.spamTip3": "The sender is noreply@cmu-lost-found-final.firebaseapp.com — mark it \"Not spam\" so future emails reach your inbox.",
 
     "nav.mine": "My posts",
+    "nav.board": "Board",
     "nav.create": "New post",
     "nav.notif": "Notifications",
     "nav.matches": "Matches",
@@ -366,6 +388,18 @@ const DICT = {
     "mine.emptySub": "Go to the New post tab to get started",
     "mine.noResultTitle": "No posts match your filters",
     "mine.noResultSub": "Try different keywords or clear the filters",
+
+    "board.title": "Community board",
+    "board.sub": "Browse every lost & found post in the system. Pin up to 3 items you want to keep an eye on.",
+    "board.pinnedTitle": "📌 Pinned",
+    "board.pin": "Pin",
+    "board.unpin": "Unpin",
+    "board.pinLimit": "You can pin up to 3 items — unpin one first.",
+    "board.mineTag": "Mine",
+    "board.emptyTitle": "No posts in the system yet",
+    "board.emptySub": "Posts will appear here once someone creates one",
+    "board.noResultTitle": "No posts match your filters",
+    "board.noResultSub": "Try different keywords or clear the filters",
 
     "create.title": "Create a new post",
     "create.typeLost": "🔴 I lost something",
@@ -394,6 +428,12 @@ const DICT = {
     "create.imgReady": "Ready to upload (resized to {kb} KB)",
     "create.imgFail": "Could not read the image, please choose another file",
     "create.otherRequired": "Please fill in the \"Other\" field",
+    "create.pickupNote": "Pickup location / how to arrange return",
+    "create.pickupNotePh": "e.g. Left with the security guard, Engineering building 1st floor",
+    "create.pickupNoteHint": "Only shown to the owner after a match is confirmed. It lets them know right away where to pick it up, no need to message you first.",
+    "create.pickupNoteUnsure": "Not sure yet — I'll reach out myself",
+    "create.pickupNoteUnsureText": "The finder hasn't specified a pickup point yet and will reach out after the match is confirmed.",
+    "create.pickupNoteRequired": "Please add a pickup note, or check \"not sure yet\"",
 
     "detail.title": "Post details",
     "detail.location": "Location",
@@ -434,6 +474,7 @@ const DICT = {
     "match.allDoneSub": "If you still haven't found your item, we'll notify you when new matches arrive.",
     "match.backToList": "Back to matches",
     "match.confirmed": "Match confirmed — contact {name} at {email}",
+    "match.pickupNoteLabel": "📍 Pickup note",
     "match.revealPending": "Confirmed · We're preparing the contact details and will email both parties within a few minutes.",
     "match.closed": "Case closed (item returned)",
     "match.markReturned": "Mark as returned",
