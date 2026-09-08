@@ -41,23 +41,31 @@
   .brand h1{font-size:18px;margin:0;line-height:1.15}
   .brand p{margin:0;font-size:11.5px;color:var(--ink-soft)}
   
-  /* ดีไซน์วงกลมตัวอักษรย่อโปรไฟล์ (User Avatar & Chip) */
-  .userchip{display:flex;align-items:center;gap:10px;font-size:13.5px;flex:none}
+  /* ระบบโปรไฟล์แบบวงกลมพร้อมดรอปดาวน์เมนู (User Avatar & Dropdown) */
+  .userchip{position:relative;display:flex;align-items:center;flex:none}
   .user-avatar-btn{
-    display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;margin:0;font-family:inherit;cursor:pointer;color:inherit;text-align:left;
+    width:40px;height:40px;border-radius:50%;background:var(--purple);color:#fff;
+    font-family:'Prompt',sans-serif;font-weight:600;font-size:16px;border:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);transition:.15s;padding:0;
   }
-  .user-avatar{
-    width:36px;height:36px;border-radius:50%;background:var(--purple);color:#fff;
-    font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;
-    box-shadow:var(--shadow-sm);flex:none;transition:.15s;
+  .user-avatar-btn:hover{background:var(--purple-deep);transform:scale(1.05)}
+  
+  .user-dropdown{
+    position:absolute;top:calc(100% + 10px);right:0;width:220px;background:var(--card);
+    border-radius:16px;box-shadow:var(--shadow);border:1.5px solid var(--line);padding:8px;z-index:100;
+    display:flex;flex-direction:column;gap:4px;transform-origin:top right;transition:.15s;
   }
-  .user-avatar-btn:hover .user-avatar{background:var(--purple-deep);transform:scale(1.05)}
-  .userchip .name{
-    font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    background:none;border:0;padding:0;margin:0;font-family:inherit;font-size:inherit;line-height:inherit;
-    color:inherit;cursor:pointer;display:inline-block;
+  .user-dropdown.hidden{display:none}
+  .user-dropdown-header{padding:10px 12px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .user-dropdown-header .ud-name{font-family:'Prompt',sans-serif;font-weight:600;font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .user-dropdown-header .ud-email{font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  
+  .user-dropdown button{
+    width:100%;text-align:left;background:none;border:0;padding:10px 12px;border-radius:10px;
+    font-size:13.5px;cursor:pointer;color:var(--ink);font-family:inherit;display:flex;align-items:center;gap:8px;transition:.1s;
   }
-  .userchip .name:hover{color:var(--purple);text-decoration:underline}
+  .user-dropdown button:hover{background:var(--purple-soft);color:var(--purple)}
+  .user-dropdown button.danger:hover{background:var(--lost-soft);color:var(--lost)}
 
   .btn{font-size:13.5px;padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink);font-weight:500;transition:.15s}
   .btn:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-soft)}
@@ -369,13 +377,21 @@
       </div>
     </div>
     <div class="userchip">
-      <button type="button" class="user-avatar-btn" onclick="showView('profile')" data-i18n-aria="nav.profile">
-        <div class="user-avatar" id="userAvatarLetter">U</div>
-        <span class="name" id="userNameChip"></span>
+      <button type="button" class="user-avatar-btn" id="userAvatarBtn" onclick="toggleUserDropdown(event)" aria-label="เมนูผู้ใช้งาน">
+        <span id="userAvatarLetter">U</span>
       </button>
-      <button class="langbtn" id="langBtnApp" onclick="toggleLang()" data-i18n-aria="common.langSwitch"></button>
-      <button class="btn small" id="refreshBtn" onclick="refreshNow()" data-i18n-aria="nav.refresh" data-i18n-title="nav.refresh">↻</button>
-      <button class="btn small" onclick="handleLogout()" data-i18n="nav.logout"></button>
+      
+      <!-- Dropdown Menu -->
+      <div id="userDropdownMenu" class="user-dropdown hidden">
+        <div class="user-dropdown-header">
+          <div class="ud-name" id="udName">-</div>
+          <div class="ud-email" id="udEmail">-</div>
+        </div>
+        <button onclick="closeDropdown(); showView('profile')">⚙️ ตั้งค่าโปรไฟล์</button>
+        <button onclick="closeDropdown(); toggleLang()"><span id="udLangLabel">🌐 เปลี่ยนภาษา (EN/ไทย)</span></button>
+        <button onclick="closeDropdown(); refreshNow()"><span data-i18n-title="nav.refresh">↻ รีเฟรชข้อมูล</span></button>
+        <button class="danger" onclick="closeDropdown(); handleLogout()"><span data-i18n="nav.logout">ออกจากระบบ</span></button>
+      </div>
     </div>
   </header>
 
@@ -525,7 +541,14 @@
         </div>
         <div class="field">
           <label for="prFaculty" data-i18n="profile.faculty"></label>
-          <input type="text" id="prFaculty" data-i18n-ph="profile.facultyPh">
+          <select id="prFaculty">
+            <option value="">กรุณาเลือกคณะ</option>
+            <option value="คณะวิศวกรรมศาสตร์">คณะวิศวกรรมศาสตร์</option>
+            <option value="คณะมนุษยศาสตร์">คณะมนุษยศาสตร์</option>
+            <option value="คณะบริหารธุรกิจ">คณะบริหารธุรกิจ</option>
+            <option value="คณะวิทยาศาสตร์">คณะวิทยาศาสตร์</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
         </div>
         <button class="btn primary" onclick="saveProfile()" id="prSaveBtn" data-i18n="common.save"></button>
         <div class="msgline" id="prMsg" role="status" aria-live="polite"></div>
@@ -630,8 +653,8 @@ const PLACES = ["หอสมุดกลาง","คณะวิศวกรร
 
 initLang();
 function paintLangButtons(){
-  const label = getLang() === 'th' ? 'EN' : 'ไทย';
-  ['langBtnAuth','langBtnVerify','langBtnApp'].forEach(id => { if($(id)) $(id).textContent = label; });
+  const label = getLang() === 'th' ? 'English (EN)' : 'ภาษาไทย (TH)';
+  if($('udLangLabel')) $('udLangLabel').textContent = `🌐 ${label}`;
   if ($('prLang')) $('prLang').value = getLang();
 }
 function toggleLang(){ setLang(getLang() === 'th' ? 'en' : 'th'); }
@@ -645,9 +668,21 @@ document.addEventListener('langchange', () => {
 });
 paintLangButtons();
 
+function toggleUserDropdown(e){
+  e.stopPropagation();
+  const menu = $('userDropdownMenu');
+  if (menu) menu.classList.toggle('hidden');
+}
+function closeDropdown(){
+  const menu = $('userDropdownMenu');
+  if (menu) menu.classList.add('hidden');
+}
+document.addEventListener('click', () => closeDropdown());
+
 function updateUserDataUI(displayName, email){
   const name = displayName || email || 'User';
-  $('userNameChip').textContent = name;
+  $('udName').textContent = name;
+  $('udEmail').textContent = email || '';
   const initial = name.trim().charAt(0).toUpperCase();
   $('userAvatarLetter').textContent = initial || 'U';
 }
@@ -893,18 +928,13 @@ let refreshing = false;
 async function refreshNow(silent){
   if (refreshing || !CURRENT_UID) return;
   refreshing = true;
-  const btn = $('refreshBtn');
-  if (!silent && btn){ btn.disabled = true; btn.textContent = '⋯'; }
   const before = JSON.stringify([allPosts.map(p=>p.id+p.status), allMatches.map(m=>m.id+m.matchStatus+m.contactRevealed)]);
   try{
     await loadData();
     const after = JSON.stringify([allPosts.map(p=>p.id+p.status), allMatches.map(m=>m.id+m.matchStatus+m.contactRevealed)]);
     if (before !== after && currentView !== 'match-detail') rerender();
   }catch(err){ console.error(err); }
-  finally{
-    refreshing = false;
-    if (!silent && btn){ btn.disabled = false; btn.textContent = '↻'; }
-  }
+  finally{ refreshing = false; }
 }
 setInterval(() => {
   if (document.visibilityState === 'visible') refreshNow(true);
@@ -1741,7 +1771,8 @@ Object.assign(window, {
   openMatchPage, matchDecision,
   saveProfile, savePrefs, sendResetFromProfile, deleteAccount,
   openAdminCat, openAdminPost, exportStats,
-  finderDecision, openReport, sendReport, adminHidePost, adminDeletePost, markReportHandled
+  finderDecision, openReport, sendReport, adminHidePost, adminDeletePost, markReportHandled,
+  toggleUserDropdown, closeDropdown
 });
 
 applyLang();
