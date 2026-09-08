@@ -114,9 +114,9 @@ const DICT = {
     "nav.refresh": "ดึงข้อมูลล่าสุด",
     "nav.menu": "เมนูหลัก",
 
-    /* ---------- ประกาศของฉัน ---------- */
-    "mine.title": "ประกาศของฉัน",
-    "mine.sub": "เห็นได้เฉพาะคุณเท่านั้น · ระบบจะจับคู่กับประกาศของคนอื่นให้อัตโนมัติเบื้องหลัง",
+/* ---------- ประกาศของฉัน ---------- */
+"mine.title": "ประกาศของฉัน",
+"mine.sub": "เฉพาะคุณเท่านั้นที่มองเห็น และระบบจะจับคู่กับประกาศของคนอื่นให้อัตโนมัติ",
     "mine.filterType": "กรองตามประเภท",
     "mine.filterCat": "กรองตามหมวดหมู่",
     "mine.filterStatus": "กรองตามสถานะ",
@@ -378,7 +378,7 @@ const DICT = {
     "nav.menu": "Main menu",
 
     "mine.title": "My posts",
-    "mine.sub": "Only you can see these · Matching against other people's posts happens automatically in the background",
+     "mine.sub": "Only you can see these, and matching against other people's posts happens automatically",
     "mine.filterType": "Filter by type",
     "mine.filterCat": "Filter by category",
     "mine.filterStatus": "Filter by status",
