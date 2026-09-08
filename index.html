@@ -125,6 +125,18 @@
   .colordot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
   .status-strip{font-size:11px;text-align:center;padding:6px;font-weight:500;background:var(--found);color:#fff}
 
+  /* การ์ดปุ่มกดเพิ่มประกาศต่อท้าย */
+  .add-card-placeholder{
+    background:var(--card);border:2px dashed var(--line);border-radius:var(--radius);
+    min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;cursor:pointer;transition:.15s;text-align:center;padding:20px;width:100%;font-family:inherit;
+  }
+  .add-card-placeholder:hover{border-color:var(--purple);background:var(--purple-soft)}
+  .add-card-placeholder .plus-icon{width:46px;height:46px;border-radius:50%;background:var(--purple-soft);color:var(--purple);font-size:24px;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .add-card-placeholder:hover .plus-icon{background:var(--purple);color:#fff}
+  .add-card-placeholder .add-text{font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;color:var(--ink)}
+  .add-card-placeholder .add-sub{font-size:12px;color:var(--ink-soft)}
+
   .mine-pinned-section{margin-bottom:24px;display:none}
   .mine-pinned-section.show{display:block}
   .mine-pinned-title{display:flex;align-items:center;gap:8px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;margin-bottom:12px;color:var(--ink)}
@@ -364,7 +376,7 @@
   <main id="mainContent" tabindex="-1">
     <!-- MY POSTS -->
     <section id="view-mine" class="view active">
-      <div class="view-head"><h2 data-i18n="mine.title"></h2><div class="sub" data-i18n="mine.sub"></div></div>
+      <div class="view-head"><h2 data-i18n="mine.title"></h2><div class="sub">เฉพาะคุณเท่านั้นที่มองเห็น และระบบจะจับคู่กับประกาศของคนอื่นให้อัตโนมัติ</div></div>
       <div id="minePinnedSection" class="mine-pinned-section"></div>
       <div class="filter-row">
         <label class="sr-only" for="mType" data-i18n="mine.filterType"></label>
@@ -590,7 +602,7 @@ const esc = s => { const d = document.createElement('div'); d.textContent = s ??
 
 let CURRENT_UID = null, profile = null;
 let detailPostId = null; 
-let editingPostId = null; // ตัวแปรเก็บรหัสโพสต์ที่กำลังแก้ไข
+let editingPostId = null;
 let allPosts = [], allMatches = [];
 let verifyQueue = [], verifyIdx = 0;
 let currentView = 'mine';
@@ -938,9 +950,17 @@ function renderMine(){
   }
 
   $('mineCount').textContent = allPosts.length ? t('mine.count', { n:list.length, total:allPosts.length }) : '';
+  
+  const cardsHTML = rest.map(p => cardHTML(p, false)).join('');
+  const addCardHTML = `<button class="add-card-placeholder" onclick="showView('create')">
+    <div class="plus-icon">+</div>
+    <div class="add-text">ลงประกาศใหม่</div>
+    <div class="add-sub">เพิ่มรายการของหายหรือพบของ</div>
+  </button>`;
+
   $('mineGrid').innerHTML = allPosts.length === 0
-    ? emptyState(t('mine.emptyTitle'), t('mine.emptySub'))
-    : (list.length ? rest.map(p => cardHTML(p, false)).join('') || emptyState(t('mine.noResultTitle'), t('mine.noResultSub')) : emptyState(t('mine.noResultTitle'), t('mine.noResultSub')));
+    ? emptyState(t('mine.emptyTitle'), t('mine.emptySub')) + addCardHTML
+    : (cardsHTML + addCardHTML);
 }
 
 async function togglePin(id){
@@ -965,7 +985,6 @@ function openMyPost(id){
   showView('post-detail'); 
 }
 
-/* ฟังก์ชันสำหรับเปิดหน้าจอแก้ไขประกาศ */
 function openEditPost(id){
   const p = postById(id);
   if (!p || p.authorId !== CURRENT_UID) return;
@@ -1187,7 +1206,6 @@ async function handleCreatePost(e){
 
   try{
     if (editingPostId) {
-      // อัปเดตข้อมูลประกาศเดิม
       await updateDoc(doc(db, 'posts', editingPostId), {
         type: ptype, category: finalCategory, color, description: desc, location,
         eventDate: $('pDate').value, pickupNote,
@@ -1212,7 +1230,6 @@ async function handleCreatePost(e){
         showView('mine');
       }, 1000);
     } else {
-      // สร้างประกาศใหม่
       const data = {
         authorId: CURRENT_UID,
         authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
