@@ -40,11 +40,24 @@
   .brand .tagicon{width:38px;height:38px;flex:none;border-radius:12px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Prompt',sans-serif;font-weight:600;color:#fff;font-size:14px}
   .brand h1{font-size:18px;margin:0;line-height:1.15}
   .brand p{margin:0;font-size:11.5px;color:var(--ink-soft)}
-  .userchip{display:flex;align-items:center;gap:8px;font-size:13.5px;flex:none}
-  .userchip .name{font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  
+  /* ดีไซน์วงกลมตัวอักษรย่อโปรไฟล์ (User Avatar & Chip) */
+  .userchip{display:flex;align-items:center;gap:10px;font-size:13.5px;flex:none}
+  .user-avatar-btn{
+    display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;margin:0;font-family:inherit;cursor:pointer;color:inherit;text-align:left;
+  }
+  .user-avatar{
+    width:36px;height:36px;border-radius:50%;background:var(--purple);color:#fff;
+    font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow-sm);flex:none;transition:.15s;
+  }
+  .user-avatar-btn:hover .user-avatar{background:var(--purple-deep);transform:scale(1.05)}
+  .userchip .name{
+    font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     background:none;border:0;padding:0;margin:0;font-family:inherit;font-size:inherit;line-height:inherit;
-    color:inherit;cursor:pointer;display:inline-flex;align-items:center;text-align:center}
-  .userchip .name:active{color:var(--purple);text-decoration:underline}
+    color:inherit;cursor:pointer;display:inline-block;
+  }
+  .userchip .name:hover{color:var(--purple);text-decoration:underline}
 
   .btn{font-size:13.5px;padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);cursor:pointer;color:var(--ink);font-weight:500;transition:.15s}
   .btn:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-soft)}
@@ -125,7 +138,6 @@
   .colordot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
   .status-strip{font-size:11px;text-align:center;padding:6px;font-weight:500;background:var(--found);color:#fff}
 
-  /* การ์ดปุ่มกดเพิ่มประกาศต่อท้าย */
   .add-card-placeholder{
     background:var(--card);border:2px dashed var(--line);border-radius:var(--radius);
     min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -357,7 +369,10 @@
       </div>
     </div>
     <div class="userchip">
-      <button type="button" class="name" id="userNameChip" onclick="showView('profile')" data-i18n-aria="nav.profile"></button>
+      <button type="button" class="user-avatar-btn" onclick="showView('profile')" data-i18n-aria="nav.profile">
+        <div class="user-avatar" id="userAvatarLetter">U</div>
+        <span class="name" id="userNameChip"></span>
+      </button>
       <button class="langbtn" id="langBtnApp" onclick="toggleLang()" data-i18n-aria="common.langSwitch"></button>
       <button class="btn small" id="refreshBtn" onclick="refreshNow()" data-i18n-aria="nav.refresh" data-i18n-title="nav.refresh">↻</button>
       <button class="btn small" onclick="handleLogout()" data-i18n="nav.logout"></button>
@@ -630,6 +645,13 @@ document.addEventListener('langchange', () => {
 });
 paintLangButtons();
 
+function updateUserDataUI(displayName, email){
+  const name = displayName || email || 'User';
+  $('userNameChip').textContent = name;
+  const initial = name.trim().charAt(0).toUpperCase();
+  $('userAvatarLetter').textContent = initial || 'U';
+}
+
 function opts(list, kind){ return list.map(v => `<option value="${esc(v)}">${esc(optionLabel(kind, v))}</option>`).join(''); }
 function fillSelects(){
   const keep = id => $(id) ? $(id).value : '';
@@ -815,12 +837,13 @@ onAuthStateChanged(auth, async user => {
 async function enterApp(user){
   showScreen('boot');
   CURRENT_UID = user.uid;
-  $('userNameChip').textContent = user.displayName || user.email;
 
   try{
     const s = await getDoc(doc(db,'users',user.uid));
     profile = s.exists() ? s.data() : { role:'user', notifyEmail:true };
   }catch(_){ profile = { role:'user', notifyEmail:true }; }
+
+  updateUserDataUI(profile.displayName || user.displayName, user.email);
 
   if (profile.lang && profile.lang !== getLang()) setLang(profile.lang);
   if (profile.role === 'admin') $('adminTab').classList.remove('hidden');
@@ -1490,7 +1513,7 @@ async function saveProfile(){
     });
     await updateProfile(auth.currentUser, { displayName: name });
     profile = { ...profile, displayName:name, phone:$('prPhone').value.trim(), faculty:$('prFaculty').value.trim() };
-    $('userNameChip').textContent = name;
+    updateUserDataUI(name, auth.currentUser?.email);
     msg.style.color='var(--found)'; msg.textContent = t('profile.saved');
   }catch(err){ msg.style.color='var(--lost)'; msg.textContent = t('profile.saveFail',{msg:err.message}); }
   finally{ btn.disabled = false; }
