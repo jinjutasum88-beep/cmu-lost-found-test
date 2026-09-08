@@ -60,7 +60,6 @@
   .langbtn{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--ink-soft);font-weight:600;letter-spacing:.03em}
   .langbtn:hover{border-color:var(--purple);color:var(--purple)}
 
-  /* ---------- auth ---------- */
   #authScreen,#verifyScreen{max-width:420px;margin:50px auto;padding:0 20px 60px}
   .auth-card{background:var(--card);border-radius:24px;padding:34px 30px;box-shadow:var(--shadow)}
   .auth-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -92,13 +91,11 @@
   .tips b{color:var(--ink);font-family:'Prompt',sans-serif;display:block;margin-bottom:6px}
   .tips ul{margin:0;padding-left:18px}
 
-  /* ---------- app ---------- */
   #appScreen{max-width:1080px;margin:0 auto;padding:0 20px 80px}
   nav.tabs{display:flex;gap:4px;overflow-x:auto;padding:14px 0;margin-bottom:22px;background:var(--card);border-radius:999px;box-shadow:var(--shadow-sm);position:sticky;top:70px;z-index:10}
   nav.tabs button{white-space:nowrap;padding:10px 18px;border-radius:999px;border:none;margin:0 4px;background:transparent;font-size:14px;cursor:pointer;color:var(--ink-soft);font-weight:500;display:flex;align-items:center;gap:6px}
   nav.tabs button.active{background:var(--purple);color:#fff;font-weight:600}
   
-  /* ลูกเล่นที่ 2: กระดิ่งแจ้งเตือน & Badge แบบขยายตัวนุ่มนวล[cite: 7] */
   .badge-count{
     min-width:20px;height:20px;border-radius:999px;background:var(--lost);
     color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;
@@ -128,7 +125,6 @@
   .colordot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
   .status-strip{font-size:11px;text-align:center;padding:6px;font-weight:500;background:var(--found);color:#fff}
 
-  /* ---------- ประกาศของฉัน + ปักหมุด ---------- */
   .mine-pinned-section{margin-bottom:24px;display:none}
   .mine-pinned-section.show{display:block}
   .mine-pinned-title{display:flex;align-items:center;gap:8px;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;margin-bottom:12px;color:var(--ink)}
@@ -144,7 +140,6 @@
   .pin-btn.pinned{background:var(--purple);border-color:var(--purple);color:#fff}
   .pin-btn:focus-visible{outline:3px solid var(--purple-soft);outline-offset:2px}
 
-  /* ---------- จุดรับของ ---------- */
   .pickup-check{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
   .pickup-check input{margin-top:3px}
 
@@ -165,7 +160,6 @@
   .notif.unread{box-shadow:0 0 0 1.5px var(--purple),var(--shadow-sm)}
   .notif .txt{font-size:14px}
 
-  /* ลูกเล่นที่ 1: การ์ดข้อมูลติดต่อค่อย ๆ ขยายเฟดขึ้นมานุ่มนวล[cite: 7] */
   .contactreveal{
     background:var(--found-soft);color:var(--found);border-radius:12px;padding:16px 18px;font-size:13px;margin-top:10px;line-height:1.7;
     opacity:0;transform:scale(.92) translateY(6px);
@@ -193,7 +187,6 @@
   .note-box{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--ink-soft);font-size:12.5px;line-height:1.7;margin-top:18px}
   .progress-line{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
 
-  /* ---------- profile ---------- */
   .panel{background:var(--card);border-radius:20px;padding:24px;box-shadow:var(--shadow-sm);margin-bottom:16px;max-width:640px}
   .panel h3{margin:0 0 4px;font-size:17px}
   .panel .psub{color:var(--ink-soft);font-size:12.5px;margin:0 0 18px;line-height:1.7}
@@ -209,7 +202,6 @@
   .switch input:checked + span{background:var(--found)}
   .switch input:checked + span::after{transform:translateX(20px)}
 
-  /* ---------- admin ---------- */
   .goals{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px}
   .goal{background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--shadow-sm)}
   .goal .big{font-family:'Prompt',sans-serif;font-size:24px;font-weight:700;color:var(--purple-deep)}
@@ -232,7 +224,6 @@
   .admin-post-row .info h3{margin:7px 0 6px;font-size:16px}
   .admin-post-row .info p{margin:0 0 7px;font-size:12px;color:var(--ink-soft);line-height:1.5}
 
-  /* ลูกเล่นที่ 3: ปุ่มกดลงประกาศสำเร็จ ปรับแต่งสถานะ Loading[cite: 7] */
   .btn-submit-wrap{position:relative;width:100%}
   .fake-spinner{display:none;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;margin:0 auto}
   .btn.loading .btn-label{display:none} 
@@ -598,7 +589,8 @@ const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
 
 let CURRENT_UID = null, profile = null;
-let detailPostId = null; // แก้ไข: ประกาศตัวแปรเก็บรหัสโพสต์เพื่อรองรับการกดดูรายละเอียด
+let detailPostId = null; 
+let editingPostId = null; // ตัวแปรเก็บรหัสโพสต์ที่กำลังแก้ไข
 let allPosts = [], allMatches = [];
 let verifyQueue = [], verifyIdx = 0;
 let currentView = 'mine';
@@ -609,7 +601,6 @@ const CATEGORIES = ["กระเป๋า","กุญแจ","โทรศั�
 const COLORS = ["ดำ","ขาว","แดง","น้ำเงิน","เขียว","เหลือง","ชมพู","เทา","น้ำตาล","อื่นๆ"];
 const PLACES = ["หอสมุดกลาง","คณะวิศวกรรมศาสตร์","คณะมนุษยศาสตร์","คณะบริหารธุรกิจ","คณะวิทยาศาสตร์","หอพักนักศึกษา (หอใน)","ศาลาอ่างแก้ว/โรงอาหาร","อาคาร 40 ปี","สวนสัก","ลานอ่างแก้ว","หอประชุมมหาวิทยาลัย","กาดหน้ามอ","จุดจอดรถ ขสมช.","สนามกีฬามหาวิทยาลัย","อื่นๆ"];
 
-/* ===================== ภาษา ===================== */
 initLang();
 function paintLangButtons(){
   const label = getLang() === 'th' ? 'EN' : 'ไทย';
@@ -627,7 +618,6 @@ document.addEventListener('langchange', () => {
 });
 paintLangButtons();
 
-/* ===================== ตัวเลือกใน dropdown ===================== */
 function opts(list, kind){ return list.map(v => `<option value="${esc(v)}">${esc(optionLabel(kind, v))}</option>`).join(''); }
 function fillSelects(){
   const keep = id => $(id) ? $(id).value : '';
@@ -645,7 +635,6 @@ function fillSelects(){
   $('mType').value = kmT; $('mCat').value = kmC; $('mStatus').value = kmS;
 }
 
-/* ===================== สลับหน้าจอ ===================== */
 function showScreen(which){
   $('bootScreen').classList.toggle('hidden', which !== 'boot');
   $('authScreen').classList.toggle('hidden', which !== 'auth');
@@ -676,7 +665,6 @@ function rerender(){
   else if (currentView === 'admin-detail') renderAdminDetail();
 }
 
-/* ===================== รหัสผ่าน ===================== */
 function toggleEye(inputId, btn){
   const el = $(inputId);
   const show = el.type === 'password';
@@ -705,7 +693,6 @@ function onPasswordInput(){
   $('signupBtn').disabled = !(r.valid && matchOk);
 }
 
-/* ===================== Auth ===================== */
 function switchAuthTab(which){
   const login = which === 'login';
   $('tabLoginBtn').classList.toggle('active', login);
@@ -804,7 +791,6 @@ async function resendVerification(){
   }, 1000);
 }
 
-/* ===================== เริ่มระบบ ===================== */
 onAuthStateChanged(auth, async user => {
   if (!user){ showScreen('auth'); switchAuthTab('login'); applyLang(); paintLangButtons(); return; }
   if (!user.emailVerified){
@@ -855,7 +841,6 @@ async function loadData(){
 }
 function pinnedIds(){ return Array.isArray(profile?.pinnedPostIds) ? profile.pinnedPostIds : []; }
 
-/* ลูกเล่นที่ 2: อัปเดตตัวเลขพร้อมเปิดใช้งานคลาสอนิเมชันขยายตัวนุ่มนวลเมื่อมีแจ้งเตือน[cite: 7] */
 function updateBadge(){
   const n = allMatches.filter(m => m.lostAuthorId === CURRENT_UID && m.matchStatus === 'waiting_for_user').length;
   const badge = $('notifBadge');
@@ -980,6 +965,25 @@ function openMyPost(id){
   showView('post-detail'); 
 }
 
+/* ฟังก์ชันสำหรับเปิดหน้าจอแก้ไขประกาศ */
+function openEditPost(id){
+  const p = postById(id);
+  if (!p || p.authorId !== CURRENT_UID) return;
+  editingPostId = id;
+  showView('create');
+  
+  document.querySelector(`input[name=ptype][value="${p.type}"]`).checked = true;
+  onPostTypeChange();
+  $('pCategory').value = p.category;
+  $('pColor').value = p.color;
+  $('pDesc').value = p.description;
+  $('pLocation').value = p.location;
+  $('pDate').value = p.eventDate || new Date().toISOString().slice(0,10);
+  if (p.pickupNote) $('pPickupNote').value = p.pickupNote;
+  
+  $('postSubmitBtn').querySelector('.btn-label').textContent = "บันทึกการแก้ไข";
+}
+
 function renderPostDetail(){
   const p = postById(detailPostId);
   const root = $('postDetailContent');
@@ -1016,6 +1020,7 @@ function renderPostDetail(){
       ${block}
       <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
         ${p.status !== 'resolved' ? `<button class="btn small accent" onclick="markResolved('${p.id}')">✓ ${esc(t('detail.markResolved'))}</button>` : ''}
+        <button class="btn small" onclick="openEditPost('${p.id}')">แก้ไขประกาศ</button>
         <button class="btn small danger" onclick="deleteMyPost('${p.id}')">${esc(t('common.delete'))}</button>
       </div>
     </div></div>`;
@@ -1146,13 +1151,14 @@ async function handleCreatePost(e){
 
   const today = new Date().toISOString().slice(0,10);
   const usedToday = profile?.postCountDate === today ? (profile?.postCountToday || 0) : 0;
-  if (usedToday >= DAILY_POST_LIMIT){
+  
+  if (!editingPostId && usedToday >= DAILY_POST_LIMIT){
     msg.style.color = 'var(--lost)';
     msg.textContent = t('limit.title') + ' — ' + t('limit.body', { n: DAILY_POST_LIMIT });
     return false;
   }
   const openPosts = allPosts.filter(p => p.status === 'active').length;
-  if (openPosts >= ACTIVE_POST_LIMIT){
+  if (!editingPostId && openPosts >= ACTIVE_POST_LIMIT){
     msg.style.color = 'var(--lost)';
     msg.textContent = t('limit.active', { n: openPosts });
     return false;
@@ -1176,50 +1182,76 @@ async function handleCreatePost(e){
   let autoCategorized = false, finalCategory = category;
   if (!hasReadableText(desc)){ finalCategory = 'อื่นๆ'; autoCategorized = true; }
 
-  /* ลูกเล่นที่ 3: เปิดใช้งานสถานะ Loading ที่ปุ่มกด[cite: 7] */
   btn.disabled = true; 
   btn.classList.add('loading');
 
-  const data = {
-    authorId: CURRENT_UID,
-    authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
-    authorEmail: auth.currentUser.email,
-    type: ptype,
-    category: finalCategory, color, description: desc, location,
-    eventDate: $('pDate').value,
-    thumbUrl: thumbData || '',
-    hasImage: !!imageData,
-    status: 'active',
-    autoCategorized,
-    processed: autoCategorized,
-    pickupNote,
-    createdAt: serverTimestamp()
-  };
-
   try{
-    const ref = await addDoc(collection(db,'posts'), data);
-    if (imageData){
-      try{ await setDoc(doc(db,'postImages',ref.id), { authorId: CURRENT_UID, data: imageData }); }
-      catch(err){ console.warn('บันทึกรูปเต็มไม่สำเร็จ:', err.message); }
+    if (editingPostId) {
+      // อัปเดตข้อมูลประกาศเดิม
+      await updateDoc(doc(db, 'posts', editingPostId), {
+        type: ptype, category: finalCategory, color, description: desc, location,
+        eventDate: $('pDate').value, pickupNote,
+        thumbUrl: thumbData || postById(editingPostId)?.thumbUrl || '',
+        hasImage: !!imageData || postById(editingPostId)?.hasImage || false
+      });
+      if (imageData) {
+        await setDoc(doc(db, 'postImages', editingPostId), { authorId: CURRENT_UID, data: imageData });
+      }
+      const idx = allPosts.findIndex(x => x.id === editingPostId);
+      if (idx !== -1) {
+        allPosts[idx] = { ...allPosts[idx], type: ptype, category: finalCategory, color, description: desc, location, eventDate: $('pDate').value, pickupNote, thumbUrl: thumbData || allPosts[idx].thumbUrl };
+      }
+      editingPostId = null;
+      $('postSubmitBtn').querySelector('.btn-label').textContent = t('create.submit');
+      msg.style.color = 'var(--found)';
+      msg.textContent = "แก้ไขประกาศเรียบร้อยแล้ว";
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        $('postForm').reset();
+        showView('mine');
+      }, 1000);
+    } else {
+      // สร้างประกาศใหม่
+      const data = {
+        authorId: CURRENT_UID,
+        authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+        authorEmail: auth.currentUser.email,
+        type: ptype,
+        category: finalCategory, color, description: desc, location,
+        eventDate: $('pDate').value,
+        thumbUrl: thumbData || '',
+        hasImage: !!imageData,
+        status: 'active',
+        autoCategorized,
+        processed: autoCategorized,
+        pickupNote,
+        createdAt: serverTimestamp()
+      };
+      const ref = await addDoc(collection(db,'posts'), data);
+      if (imageData){
+        try{ await setDoc(doc(db,'postImages',ref.id), { authorId: CURRENT_UID, data: imageData }); }catch(_){}
+      }
+      try{
+        await updateDoc(doc(db,'users',CURRENT_UID), { postCountDate: today, postCountToday: usedToday + 1 });
+        profile = { ...profile, postCountDate: today, postCountToday: usedToday + 1 };
+      }catch(_){}
+      allPosts.unshift({ id:ref.id, ...data, createdAt:{ seconds: Math.floor(Date.now()/1000) } });
+      
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        $('postForm').reset();
+        ['pCategory','pColor','pLocation'].forEach(id => { $(id+'Other').classList.add('hidden'); $(id+'Other').required=false; });
+        $('pickupNoteField').classList.add('hidden');
+        $('pPickupNote').disabled = false;
+        clearImage('');
+        $('pDate').value = new Date().toISOString().slice(0,10);
+        msg.style.color = autoCategorized ? 'var(--amber)' : 'var(--found)';
+        msg.textContent = t(autoCategorized ? 'create.okAuto' : 'create.ok');
+        setTimeout(() => showView('mine'), 1000);
+      }, 800);
     }
-    try{
-      await updateDoc(doc(db,'users',CURRENT_UID), { postCountDate: today, postCountToday: usedToday + 1 });
-      profile = { ...profile, postCountDate: today, postCountToday: usedToday + 1 };
-    }catch(err){ console.warn(err.message); }
-    allPosts.unshift({ id:ref.id, ...data, createdAt:{ seconds: Math.floor(Date.now()/1000) } });
-    
-    setTimeout(() => {
-      btn.classList.remove('loading');
-      $('postForm').reset();
-      ['pCategory','pColor','pLocation'].forEach(id => { $(id+'Other').classList.add('hidden'); $(id+'Other').required=false; });
-      $('pickupNoteField').classList.add('hidden');
-      $('pPickupNote').disabled = false;
-      clearImage('');
-      $('pDate').value = new Date().toISOString().slice(0,10);
-      msg.style.color = autoCategorized ? 'var(--amber)' : 'var(--found)';
-      msg.textContent = t(autoCategorized ? 'create.okAuto' : 'create.ok');
-      setTimeout(() => showView('mine'), 1000);
-    }, 800);
   }catch(err){
     btn.classList.remove('loading');
     btn.disabled = false;
@@ -1258,7 +1290,6 @@ function renderNotifs(){
   }).join('');
 }
 
-/* ลูกเล่นที่ 1: ใส่คลาส `.show` หน่วงเวลาเล็กน้อยเพื่อให้การ์ดข้อมูลติดต่อค่อย ๆ ขยายเฟดขึ้นมานุ่มนวล[cite: 7] */
 function contactBlock(m, myPost){
   const iAmFinder = m.foundAuthorId === CURRENT_UID;
 
@@ -1663,7 +1694,7 @@ Object.assign(window, {
   toggleLang, setLangFromProfile, toggleEye, onPasswordInput,
   switchAuthTab, handleLogin, handleSignup, handleForgotPassword, handleLogout,
   checkEmailVerified, resendVerification,
-  showView, refreshNow, renderMine, openMyPost, markResolved, deleteMyPost,
+  showView, refreshNow, renderMine, openMyPost, openEditPost, markResolved, deleteMyPost,
   toggleOther, previewPostImage, handleCreatePost,
   onPostTypeChange, onPickupUnsureChange, onPickupNoteInput,
   togglePin,
