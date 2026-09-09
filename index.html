@@ -183,14 +183,39 @@
 }
 
 .field .pickup-check input{
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
   width:18px;
   height:18px;
   min-width:18px;
+  max-width:18px;
+  max-height:18px;
+  flex-shrink:0;
   margin:0;
   padding:0;
   border:1.5px solid var(--line);
   border-radius:5px;
   background:#fff;
+  position:relative;
+  cursor:pointer;
+}
+
+.field .pickup-check input:checked{
+  background:var(--purple);
+  border-color:var(--purple);
+}
+
+.field .pickup-check input:checked::after{
+  content:'';
+  position:absolute;
+  left:5px;
+  top:1px;
+  width:5px;
+  height:9px;
+  border:solid #fff;
+  border-width:0 2px 2px 0;
+  transform:rotate(45deg);
 }
 
 .pickup-check span{
