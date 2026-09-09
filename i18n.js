@@ -247,7 +247,8 @@ const DICT = {
     "admin.itemCount": "{n} รายการ · คลิกการ์ดเพื่อดูรายละเอียด",
     "admin.poster": "ผู้ประกาศ",
     "admin.inProgress": "กำลังดำเนินการ",
-    "admin.noData": "ไม่มีข้อมูล"
+    "admin.noData": "ไม่มีข้อมูล",
+    "admin.loadError": "โหลด Dashboard ไม่สำเร็จ กรุณาตรวจสิทธิ์แอดมิน แล้วออกจากระบบและเข้าสู่ระบบใหม่"
   },
 
   en: {
@@ -472,7 +473,8 @@ const DICT = {
     "admin.itemCount": "{n} item(s) · click a card for details",
     "admin.poster": "Posted by",
     "admin.inProgress": "In progress",
-    "admin.noData": "No data"
+    "admin.noData": "No data",
+    "admin.loadError": "Dashboard could not be loaded. Check the admin permission, then sign out and sign in again."
   }
 };
 
