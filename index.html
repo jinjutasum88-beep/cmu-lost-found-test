@@ -84,6 +84,8 @@
   .langbtn:hover{border-color:var(--purple);color:var(--purple)}
 
   #authScreen,#verifyScreen{max-width:420px;margin:50px auto;padding:0 20px 60px}
+  .auth-back{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--ink-soft);padding:0;margin:0 0 12px;cursor:pointer;font-size:13px}
+  .auth-back:hover{color:var(--purple)}
   .auth-card{background:var(--card);border-radius:24px;padding:34px 30px;box-shadow:var(--shadow)}
   .auth-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
   .auth-card h2{font-size:24px;margin:0}
@@ -304,6 +306,48 @@
   .spin{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--purple);border-radius:50%;animation:sp .8s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
 
+  /* ---------- หน้าแรกสาธารณะก่อนเข้าสู่ระบบ ---------- */
+  #publicScreen{min-height:100vh}
+  .public-shell{width:min(1120px,calc(100% - 40px));margin:auto}
+  .public-head{padding:14px 0}
+  .public-nav{height:68px;padding:0 20px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.96);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .public-brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .public-brand .tagicon{width:42px;height:42px;flex:none;border-radius:13px;background:var(--purple);color:#fff;display:grid;place-items:center;font-family:'Prompt',sans-serif;font-weight:600;font-size:14px}
+  .public-brand strong{display:block;font-family:'Prompt',sans-serif;font-size:17px;line-height:1.15}
+  .public-brand small{display:block;color:var(--ink-soft);font-size:11.5px;margin-top:3px}
+  .public-nav-actions{display:flex;align-items:center;gap:8px;flex:none}
+  .public-hero{min-height:570px;padding:54px 0 48px;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:48px}
+  .public-kicker{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;background:var(--purple-soft);color:var(--purple-deep);font-size:12.5px;font-weight:600}
+  .public-title{font-size:clamp(40px,5.4vw,66px);line-height:1.12;letter-spacing:-.05em;margin:19px 0 18px;max-width:640px}
+  .public-title span{color:var(--purple)}
+  .public-lead{font-size:17px;line-height:1.8;color:var(--ink-soft);max-width:570px;margin:0 0 28px}
+  .public-actions{display:flex;flex-wrap:wrap;gap:10px}.public-actions .btn{padding:12px 22px}
+  .public-cmu-note{display:flex;align-items:center;gap:8px;margin-top:20px;color:var(--ink-soft);font-size:13px}
+  .public-cmu-note i{width:7px;height:7px;border-radius:50%;background:var(--found)}
+  .public-visual{min-height:420px;display:grid;place-items:center;position:relative}
+  .public-orb{position:absolute;width:94%;height:90%;border-radius:43% 57% 48% 52%;background:linear-gradient(145deg,var(--purple-soft),var(--lost-soft));transform:rotate(5deg)}
+  .public-board{position:relative;width:min(96%,430px);padding:25px 22px 22px;border:10px solid #98623E;border-radius:22px;background-color:#C88F5C;background-image:radial-gradient(#A97043 1px,transparent 1px),radial-gradient(#E0AF7A 1px,transparent 1px);background-position:0 0,7px 7px;background-size:14px 14px;box-shadow:0 28px 60px -28px #684126}
+  .public-board-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .public-note{position:relative;min-height:128px;padding:16px 13px 13px;background:#fff;border:1px solid var(--line);border-radius:4px 14px 14px 14px;box-shadow:0 13px 22px -17px #5c361e}
+  .public-pin{position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:17px;height:17px;border-radius:50%;background:var(--purple);box-shadow:0 4px 7px #5f3b2980}
+  .public-note-label{display:inline-block;padding:4px 9px;border-radius:999px;background:var(--lost-soft);color:var(--lost);font-size:10.5px;font-weight:600}
+  .public-note-label.found{background:var(--found-soft);color:var(--found)}
+  .public-note-title{display:block;margin:11px 0 4px;font-weight:600;font-size:13px}
+  .public-note-detail{display:block;color:var(--ink-soft);font-size:11px;line-height:1.55}
+  .public-how{padding:16px 0 74px}
+  .public-section-head{text-align:center;max-width:640px;margin:0 auto 28px}
+  .public-section-head h2{font-size:29px;margin:0 0 8px}.public-section-head p{color:var(--ink-soft);font-size:15px;margin:0}
+  .public-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .public-step{padding:23px;background:var(--card);border:1px solid var(--line);border-radius:21px;box-shadow:var(--shadow-sm)}
+  .public-step-num{width:34px;height:34px;border-radius:10px;background:var(--purple-soft);color:var(--purple);display:grid;place-items:center;font-family:'Prompt',sans-serif;font-weight:600;margin-bottom:16px}
+  .public-step h3{font-size:16px;margin:0 0 6px}.public-step p{font-size:13.5px;line-height:1.7;color:var(--ink-soft);margin:0}
+  .public-trust{margin-bottom:70px;padding:34px;border-radius:27px;background:var(--purple-deep);color:#fff;display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+  .public-trust h2{font-size:27px;margin:0 0 9px}.public-trust p{margin:0;color:#E2D8F4;line-height:1.75;font-size:14px}
+  .public-trust-list{display:grid;gap:9px}.public-trust-item{padding:12px 14px;border:1px solid #ffffff26;border-radius:13px;background:#ffffff12;font-size:13.5px}
+  .public-foot{text-align:center;color:var(--ink-soft);font-size:12px;padding:24px 20px 34px;border-top:1px solid var(--line)}
+  @media(max-width:780px){.public-shell{width:min(680px,calc(100% - 24px))}.public-nav{height:62px;padding:0 13px;border-radius:18px}.public-brand small{display:none}.public-login{display:none}.public-hero{grid-template-columns:1fr;padding:38px 4px 42px;gap:12px}.public-title{font-size:42px}.public-lead{font-size:15.5px}.public-visual{min-height:380px}.public-steps,.public-trust{grid-template-columns:1fr}.public-section-head{text-align:left}}
+  @media(max-width:450px){.public-brand strong{font-size:14px}.public-brand .tagicon{width:38px;height:38px}.public-nav-actions .langbtn{display:none}.public-nav-actions .btn{padding:9px 13px;font-size:12.5px}.public-title{font-size:35px}.public-actions{display:grid}.public-actions .btn{text-align:center}.public-visual{min-height:350px}.public-board{padding:21px 15px 17px;border-width:8px}.public-board-grid{gap:9px}.public-note{min-height:121px;padding:14px 10px 10px}.public-note-title{font-size:12px}.public-note-detail{font-size:10.5px}.public-trust{padding:25px}}
+
   /* ---------- หน้าหลัก ---------- */
   .home-wrap{position:relative;overflow:hidden;border-radius:28px;padding:44px 42px 28px;background:linear-gradient(145deg,#fff 0%,#FAF7FF 62%,#F8EEF4 100%);border:1px solid var(--line);box-shadow:var(--shadow-sm)}
   .home-wrap::before{content:"";position:absolute;width:310px;height:310px;border-radius:50%;right:-120px;top:-110px;background:rgba(107,65,184,.07)}
@@ -345,8 +389,62 @@
 
 <div id="bootScreen"><div class="spin" role="status" aria-live="polite"><span class="sr-only" data-i18n="common.loading"></span></div></div>
 
+<!-- ================= PUBLIC HOME ================= -->
+<div id="publicScreen" class="hidden">
+  <header class="public-head">
+    <div class="public-shell public-nav">
+      <div class="public-brand">
+        <div class="tagicon" aria-hidden="true">L&amp;F</div>
+        <div><strong data-i18n="app.name"></strong><small data-i18n="app.tagline"></small></div>
+      </div>
+      <div class="public-nav-actions">
+        <button class="langbtn" id="langBtnPublic" onclick="toggleLang()" data-i18n-aria="common.langSwitch"></button>
+        <button class="btn public-login" onclick="openAuth('login')" data-i18n="public.login"></button>
+        <button class="btn primary" onclick="openAuth('signup')" data-i18n="public.signup"></button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="public-shell public-hero">
+      <div>
+        <span class="public-kicker" data-i18n="public.kicker"></span>
+        <h1 class="public-title"><span data-i18n="public.title1"></span><br><span data-i18n="public.title2"></span></h1>
+        <p class="public-lead" data-i18n="public.lead"></p>
+        <div class="public-actions">
+          <button class="btn primary" onclick="openAuth('signup')" data-i18n="public.start"></button>
+          <button class="btn" onclick="document.getElementById('publicHow').scrollIntoView({behavior:'smooth'})" data-i18n="public.howButton"></button>
+        </div>
+        <div class="public-cmu-note"><i></i><span data-i18n="public.cmuOnly"></span></div>
+      </div>
+      <div class="public-visual" data-i18n-aria="public.boardAria">
+        <div class="public-orb"></div>
+        <div class="public-board"><div class="public-board-grid">
+          <article class="public-note"><span class="public-pin"></span><span class="public-note-label" data-i18n="common.lost"></span><strong class="public-note-title" data-i18n="public.card1Title"></strong><span class="public-note-detail" data-i18n="public.card1Detail"></span></article>
+          <article class="public-note"><span class="public-pin"></span><span class="public-note-label found" data-i18n="common.found"></span><strong class="public-note-title" data-i18n="public.card2Title"></strong><span class="public-note-detail" data-i18n="public.card2Detail"></span></article>
+          <article class="public-note"><span class="public-pin"></span><span class="public-note-label found" data-i18n="public.matched"></span><strong class="public-note-title" data-i18n="public.card3Title"></strong><span class="public-note-detail" data-i18n="public.card3Detail"></span></article>
+          <article class="public-note"><span class="public-pin"></span><span class="public-note-label" data-i18n="common.lost"></span><strong class="public-note-title" data-i18n="public.card4Title"></strong><span class="public-note-detail" data-i18n="public.card4Detail"></span></article>
+        </div></div>
+      </div>
+    </section>
+    <section class="public-shell public-how" id="publicHow">
+      <div class="public-section-head"><h2 data-i18n="public.howTitle"></h2><p data-i18n="public.howLead"></p></div>
+      <div class="public-steps">
+        <article class="public-step"><span class="public-step-num">1</span><h3 data-i18n="home.step1Title"></h3><p data-i18n="public.step1"></p></article>
+        <article class="public-step"><span class="public-step-num">2</span><h3 data-i18n="home.step2Title"></h3><p data-i18n="public.step2"></p></article>
+        <article class="public-step"><span class="public-step-num">3</span><h3 data-i18n="home.step3Title"></h3><p data-i18n="public.step3"></p></article>
+      </div>
+    </section>
+    <section class="public-shell public-trust">
+      <div><h2 data-i18n="public.trustTitle"></h2><p data-i18n="public.trustLead"></p></div>
+      <div class="public-trust-list"><div class="public-trust-item" data-i18n="public.trust1"></div><div class="public-trust-item" data-i18n="public.trust2"></div><div class="public-trust-item" data-i18n="public.trust3"></div></div>
+    </section>
+  </main>
+  <footer class="public-foot" data-i18n="public.footer"></footer>
+</div>
+
 <!-- ================= AUTH ================= -->
 <div id="authScreen" class="hidden">
+  <button class="auth-back" onclick="showScreen('public')" data-i18n="public.back"></button>
   <div class="auth-card">
     <div class="auth-top">
       <h2 data-i18n="app.name"></h2>
@@ -739,7 +837,7 @@ const CMU_FACULTIES = [
 initLang();
 function paintLangButtons(){
   const label = getLang() === 'th' ? 'EN' : 'ไทย';
-  ['langBtnAuth','langBtnVerify','langBtnApp'].forEach(id => { if($(id)) $(id).textContent = label; });
+  ['langBtnPublic','langBtnAuth','langBtnVerify','langBtnApp'].forEach(id => { if($(id)) $(id).textContent = label; });
 }
 function toggleLang(){ setLang(getLang() === 'th' ? 'en' : 'th'); }
 function setLangFromProfile(v){ setLang(v); savePrefsModal(); }
@@ -899,9 +997,15 @@ function fillSelects(){
 
 function showScreen(which){
   $('bootScreen').classList.toggle('hidden', which !== 'boot');
+  $('publicScreen').classList.toggle('hidden', which !== 'public');
   $('authScreen').classList.toggle('hidden', which !== 'auth');
   $('verifyScreen').classList.toggle('hidden', which !== 'verify');
   $('appScreen').classList.toggle('hidden', which !== 'app');
+}
+function openAuth(which = 'login'){
+  showScreen('auth');
+  switchAuthTab(which);
+  window.scrollTo(0, 0);
 }
 function showView(name){
   currentView = name;
@@ -1096,7 +1200,7 @@ async function resendVerification(){
 }
 
 onAuthStateChanged(auth, async user => {
-  if (!user){ showScreen('auth'); switchAuthTab('login'); applyLang(); paintLangButtons(); return; }
+  if (!user){ showScreen('public'); switchAuthTab('login'); applyLang(); paintLangButtons(); return; }
   if (!user.emailVerified){
     try { await reload(user); } catch(_){}
     if (!user.emailVerified){ goVerify(user); applyLang(); paintLangButtons(); return; }
@@ -2054,7 +2158,7 @@ function exportStats(){
 
 Object.assign(window, {
   toggleLang, setLangFromProfile, toggleEye, onPasswordInput,
-  switchAuthTab, handleLogin, handleSignup, handleForgotPassword, handleLogout,
+  showScreen, openAuth, switchAuthTab, handleLogin, handleSignup, handleForgotPassword, handleLogout,
   checkEmailVerified, resendVerification,
   showView, startHomePost, refreshNow, renderMine, openMyPost, openEditPost, markResolved, deleteMyPost,
   toggleOther, previewPostImage, handleCreatePost,
