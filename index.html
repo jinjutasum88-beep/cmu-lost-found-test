@@ -391,6 +391,7 @@
         <li data-i18n="verify.spamTip1"></li>
         <li data-i18n="verify.spamTip2"></li>
         <li data-i18n="verify.spamTip3"></li>
+        <li data-i18n="verify.usedTip"></li>
       </ul>
     </div>
   </div>
@@ -942,18 +943,36 @@ function goVerify(user){
   showScreen('verify');
 }
 
-async function checkEmailVerified(){
+let verifyCheckBusy = false;
+async function checkEmailVerified(silent = false){
   const msg = $('verifyMsg');
-  if (!auth.currentUser) return;
-  msg.style.color = 'var(--ink-soft)'; msg.textContent = t('common.loading');
-  await reload(auth.currentUser);
-  if (auth.currentUser.emailVerified){
-    msg.style.color = 'var(--found)'; msg.textContent = t('verify.success');
-    await enterApp(auth.currentUser);
-  } else {
-    msg.style.color = 'var(--lost)'; msg.textContent = t('verify.notYet');
+  if (!auth.currentUser || verifyCheckBusy) return;
+  verifyCheckBusy = true;
+  if (!silent){ msg.style.color = 'var(--ink-soft)'; msg.textContent = t('common.loading'); }
+  try{
+    await reload(auth.currentUser);
+    if (auth.currentUser.emailVerified){
+      msg.style.color = 'var(--found)'; msg.textContent = t('verify.success');
+      await enterApp(auth.currentUser);
+    } else if (!silent){
+      msg.style.color = 'var(--lost)'; msg.textContent = t('verify.notYet');
+    }
+  }catch(err){
+    if (!silent){ msg.style.color = 'var(--lost)'; msg.textContent = thaiError(err.code); }
+  }finally{
+    verifyCheckBusy = false;
   }
 }
+
+// เมื่อผู้ใช้กลับจากอีเมล ให้ตรวจสถานะให้อัตโนมัติ ไม่ต้องกดปุ่มซ้ำ
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !$('verifyScreen').classList.contains('hidden')) {
+    checkEmailVerified(true);
+  }
+});
+window.addEventListener('focus', () => {
+  if (!$('verifyScreen').classList.contains('hidden')) checkEmailVerified(true);
+});
 
 let resendTimer = null;
 async function resendVerification(){
@@ -1006,10 +1025,7 @@ async function enterApp(user){
   updateUserDataUI(profile.displayName || user.displayName, user.email);
 
   if (profile.lang && profile.lang !== getLang()) setLang(profile.lang);
- $('adminTab').classList.toggle(
-  'hidden',
-  !(IS_ADMIN || profile?.role === 'admin')
-);
+  $('adminTab').classList.toggle('hidden', !IS_ADMIN);
 
   fillSelects();
   const today = new Date().toISOString().slice(0,10);
