@@ -577,7 +577,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendEmailVerification, sendPasswordResetEmail, updateProfile,
-  onAuthStateChanged, signOut, reload, deleteUser
+  onAuthStateChanged, signOut, reload, deleteUser, getIdToken
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc,
@@ -961,6 +961,18 @@ onAuthStateChanged(auth, async user => {
 
 async function enterApp(user){
   showScreen('boot');
+  // บังคับออก token ใหม่หลังยืนยันอีเมล เพื่อให้ Firestore Rules เห็น
+  // email_verified เป็น true เหมือนกันทุกเบราว์เซอร์
+  try {
+    await reload(user);
+    if (!user.emailVerified) {
+      goVerify(user);
+      return;
+    }
+    await getIdToken(user, true);
+  } catch (err) {
+    console.warn('รีเฟรชสถานะบัญชีไม่สำเร็จ:', err.message);
+  }
   CURRENT_UID = user.uid;
 
   try{
@@ -1300,6 +1312,9 @@ function shrinkImage(file, maxSide = 800, budget = 700000){
         cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
         let q = 0.7, out = cv.toDataURL('image/jpeg', q);
         while (out.length > budget && q > 0.25){ q -= 0.1; out = cv.toDataURL('image/jpeg', q); }
+        // อย่าส่งรูปที่ยังเกินเพดานไปให้ Firestore เพราะ Rules จะตอบกลับเพียง
+        // Missing or insufficient permissions ซึ่งทำให้ผู้ใช้ไม่รู้ว่าสาเหตุคือขนาดรูป
+        if (out.length > budget) return rej(new Error('image-too-large'));
         res(out);
       };
       im.onerror = rej; im.src = r.result;

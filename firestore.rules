@@ -56,10 +56,10 @@ service cloud.firestore {
                     // เก็บเฉพาะรูปย่อในเอกสารหลัก รูปเต็มอยู่ที่ postImages
                     && request.resource.data.thumbUrl.size() < 60000;
 
-      // เจ้าของแก้ได้เฉพาะสถานะ ส่วนแอดมินแก้ได้เพื่อซ่อนเนื้อหาไม่เหมาะสม
+      // เจ้าของแก้ไขรายละเอียดประกาศของตัวเองได้ แต่เปลี่ยนเจ้าของหรือฟิลด์ระบบไม่ได้
       allow update: if verifiedCmu() && (
                       (resource.data.authorId == request.auth.uid
-                       && changedKeys().hasOnly(['status'])
+                       && changedKeys().hasOnly(['type','category','color','description','location','eventDate','pickupNote','thumbUrl','hasImage','status'])
                        && request.resource.data.status in ['active','resolved'])
                       || (isAdmin()
                           && changedKeys().hasOnly(['status','hiddenReason','hiddenAt']))
@@ -75,7 +75,10 @@ service cloud.firestore {
       allow create: if verifiedCmu()
                     && request.resource.data.authorId == request.auth.uid
                     && request.resource.data.data.size() < 750000;
-      allow update: if false;
+      allow update: if verifiedCmu()
+                    && resource.data.authorId == request.auth.uid
+                    && request.resource.data.authorId == resource.data.authorId
+                    && request.resource.data.data.size() < 750000;
       allow delete: if verifiedCmu()
                     && (resource.data.authorId == request.auth.uid || isAdmin());
     }
