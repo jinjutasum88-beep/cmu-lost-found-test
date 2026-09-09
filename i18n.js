@@ -133,8 +133,8 @@ const DICT = {
     "home.step1Body": "บอกรายละเอียดของที่หายหรือพบ",
     "home.step2Title": "ระบบช่วยจับคู่",
     "home.step2Body": "เปรียบเทียบประกาศที่ใกล้เคียง",
-    "home.step3Title": "ติดต่อรับคืน",
-    "home.step3Body": "ตรวจสอบและนัดหมายอย่างปลอดภัย",
+    "home.step3Title": "ดูข้อมูลรับคืน",
+    "home.step3Body": "ดูจุดรับของและโน้ตจากผู้พบ",
 
     /* ---------- ประกาศของฉัน ---------- */
     "mine.title": "ประกาศของฉัน",
@@ -387,8 +387,8 @@ const DICT = {
     "home.step1Body": "Describe what you lost or found",
     "home.step2Title": "Automatic matching",
     "home.step2Body": "We compare similar listings",
-    "home.step3Title": "Arrange the return",
-    "home.step3Body": "Review the match and make contact safely",
+    "home.step3Title": "View return details",
+    "home.step3Body": "See the pickup point and note from the finder",
 
     "mine.title": "My posts",
     "mine.sub": "Only you can see these, and matching against other people's posts happens automatically",
