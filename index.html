@@ -300,6 +300,40 @@
   #bootScreen{display:grid;place-items:center;min-height:70vh}
   .spin{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--purple);border-radius:50%;animation:sp .8s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---------- หน้าหลัก ---------- */
+  .home-wrap{position:relative;overflow:hidden;border-radius:28px;padding:44px 42px 28px;background:linear-gradient(145deg,#fff 0%,#FAF7FF 62%,#F8EEF4 100%);border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+  .home-wrap::before{content:"";position:absolute;width:310px;height:310px;border-radius:50%;right:-120px;top:-110px;background:rgba(107,65,184,.07)}
+  .home-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:center;position:relative;z-index:1}
+  .home-kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:var(--purple-soft);color:var(--purple-deep);font-size:12px;font-weight:600}
+  .home-title{font-size:38px;line-height:1.25;margin:16px 0 12px;letter-spacing:-.035em;max-width:520px}
+  .home-title span{color:var(--purple)}
+  .home-lead{color:var(--ink-soft);font-size:14px;line-height:1.8;margin:0 0 24px;max-width:520px}
+  .home-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .home-actions .btn{padding:11px 20px}
+  .home-art{height:270px;display:grid;place-items:center;position:relative}
+  .home-art-shape{position:absolute;width:230px;height:230px;border-radius:44% 56% 58% 42%/50% 41% 59% 50%;background:linear-gradient(145deg,var(--purple-soft),var(--lost-soft));transform:rotate(8deg)}
+  .home-box{width:195px;height:145px;background:#fff;border-radius:25px;box-shadow:0 24px 55px rgba(79,43,147,.16);z-index:2;padding:23px;transform:rotate(-3deg);position:relative}
+  .home-box::before{content:"";position:absolute;width:84px;height:14px;background:var(--purple);border-radius:8px 8px 3px 3px;top:-7px;left:55px}
+  .home-box b{font-family:'Prompt',sans-serif;font-size:14px}
+  .home-things{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:15px}
+  .home-thing{height:42px;border-radius:12px;background:var(--paper);display:grid;place-items:center;font-size:19px}
+  .home-bubble{position:absolute;z-index:3;background:#fff;border-radius:13px;padding:9px 12px;box-shadow:0 12px 30px rgba(79,43,147,.12);font-size:11.5px}
+  .home-bubble.one{right:0;top:32px}.home-bubble.two{left:0;bottom:22px}
+  .home-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px 10px;box-shadow:var(--shadow-sm);margin-top:28px;position:relative;z-index:1}
+  .home-stat{text-align:center;border-right:1px solid var(--line)}.home-stat:last-child{border:0}
+  .home-stat b{font-family:'Prompt',sans-serif;font-size:22px;display:block;color:var(--purple-deep)}.home-stat span{font-size:11.5px;color:var(--ink-soft)}
+  .home-lower{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:26px}
+  .home-section-title{font-size:17px;margin:0 0 12px}
+  .home-recent-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .home-mini-post{background:#fff;border:1px solid var(--line);border-radius:17px;padding:12px;display:grid;grid-template-columns:60px 1fr;gap:11px;align-items:center;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink)}
+  .home-mini-thumb{height:60px;border-radius:13px;background:linear-gradient(145deg,var(--paper-2),var(--lost-soft));display:grid;place-items:center;color:var(--purple);font-size:21px;overflow:hidden}
+  .home-mini-thumb img{width:100%;height:100%;object-fit:cover}.home-mini-post b{font-size:13px;display:block}.home-mini-post small{font-size:10.5px;color:var(--ink-soft)}
+  .home-match-card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:17px;min-height:116px}
+  .home-match-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.home-score{background:var(--purple-soft);color:var(--purple);border-radius:9px;padding:5px 8px;font-size:11px;white-space:nowrap}.home-match-card p{font-size:12px;color:var(--ink-soft);line-height:1.65}
+  .home-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}
+  .home-step{display:flex;gap:10px;align-items:flex-start;padding:12px}.home-step-num{width:28px;height:28px;border-radius:9px;background:var(--purple-soft);color:var(--purple);display:grid;place-items:center;font-weight:600;flex:none}.home-step b{display:block;font-size:13px}.home-step small{color:var(--ink-soft);font-size:11px}
+  @media(max-width:760px){.home-wrap{padding:30px 20px 22px}.home-hero{grid-template-columns:1fr}.home-title{font-size:30px}.home-art{height:245px}.home-lower{grid-template-columns:1fr}.home-recent-grid{grid-template-columns:1fr}.home-steps{grid-template-columns:1fr}.home-stat b{font-size:19px}}
 </style>
 </head>
 <body>
@@ -432,7 +466,8 @@
   </header>
 
   <nav class="tabs" data-i18n-aria="nav.menu">
-    <button class="active" onclick="showView('mine')" data-tab="mine" data-i18n="nav.mine"></button>
+    <button class="active" onclick="showView('home')" data-tab="home" data-i18n="nav.home"></button>
+    <button onclick="showView('mine')" data-tab="mine" data-i18n="nav.mine"></button>
     <button onclick="showView('create')" data-tab="create" data-i18n="nav.create"></button>
     <button onclick="showView('notif')" data-tab="notif"><span data-i18n="nav.notif"></span><span class="badge-count hidden" id="notifBadge">0</span></button>
     <button onclick="showView('matches')" data-tab="matches" data-i18n="nav.matches"></button>
@@ -440,8 +475,45 @@
   </nav>
 
   <main id="mainContent" tabindex="-1">
+    <!-- HOME -->
+    <section id="view-home" class="view active">
+      <div class="home-wrap">
+        <div class="home-hero">
+          <div>
+            <span class="home-kicker">✦ <span data-i18n="home.welcome"></span></span>
+            <h2 class="home-title"><span data-i18n="home.title"></span></h2>
+            <p class="home-lead" data-i18n="home.lead"></p>
+            <div class="home-actions">
+              <button class="btn primary" onclick="startHomePost('lost')">⌕ <span data-i18n="home.lostCta"></span></button>
+              <button class="btn accent" onclick="startHomePost('found')">♡ <span data-i18n="home.foundCta"></span></button>
+            </div>
+          </div>
+          <div class="home-art" aria-hidden="true">
+            <div class="home-art-shape"></div>
+            <div class="home-box"><b>LOST &amp; FOUND</b><div class="home-things"><div class="home-thing">🔑</div><div class="home-thing">👛</div><div class="home-thing">🎧</div></div></div>
+            <div class="home-bubble one">📍 CMU Lost &amp; Found</div>
+            <div class="home-bubble two">✓ Match notification</div>
+          </div>
+        </div>
+        <div class="home-stats">
+          <div class="home-stat"><b id="homePostCount">0</b><span data-i18n="home.myPosts"></span></div>
+          <div class="home-stat"><b id="homeMatchCount">0</b><span data-i18n="home.matches"></span></div>
+          <div class="home-stat"><b id="homeNotifCount">0</b><span data-i18n="home.newNotifs"></span></div>
+        </div>
+      </div>
+      <div class="home-lower">
+        <div><h3 class="home-section-title" data-i18n="home.recent"></h3><div class="home-recent-grid" id="homeRecentPosts"></div></div>
+        <div><h3 class="home-section-title" data-i18n="home.recentMatch"></h3><div id="homeRecentMatch"></div></div>
+      </div>
+      <div class="home-steps">
+        <div class="home-step"><span class="home-step-num">1</span><div><b data-i18n="home.step1Title"></b><small data-i18n="home.step1Body"></small></div></div>
+        <div class="home-step"><span class="home-step-num">2</span><div><b data-i18n="home.step2Title"></b><small data-i18n="home.step2Body"></small></div></div>
+        <div class="home-step"><span class="home-step-num">3</span><div><b data-i18n="home.step3Title"></b><small data-i18n="home.step3Body"></small></div></div>
+      </div>
+    </section>
+
     <!-- MY POSTS -->
-    <section id="view-mine" class="view active">
+    <section id="view-mine" class="view">
       <div class="view-head"><h2 data-i18n="mine.title"></h2><div class="sub">เฉพาะคุณเท่านั้นที่มองเห็น และระบบจะจับคู่กับประกาศของคนอื่นให้อัตโนมัติ</div></div>
       <div id="minePinnedSection" class="mine-pinned-section"></div>
       <div class="filter-row">
@@ -837,13 +909,38 @@ function showView(name){
   window.scrollTo(0, 0);
 }
 function rerender(){
-  if (currentView === 'mine') renderMine();
+  if (currentView === 'home') renderHome();
+  else if (currentView === 'mine') renderMine();
   else if (currentView === 'notif') renderNotifs();
   else if (currentView === 'matches') renderMatches();
   else if (currentView === 'match-detail') renderMatchDetail();
   else if (currentView === 'post-detail') renderPostDetail();
   else if (currentView === 'admin') renderAdmin();
   else if (currentView === 'admin-detail') renderAdminDetail();
+}
+
+function startHomePost(type){
+  showView('create');
+  const input = document.querySelector(`input[name="ptype"][value="${type}"]`);
+  if (input){ input.checked = true; onPostTypeChange(); }
+}
+
+function renderHome(){
+  $('homePostCount').textContent = allPosts.length;
+  $('homeMatchCount').textContent = allMatches.length;
+  $('homeNotifCount').textContent = allMatches.filter(m => m.matchStatus === 'waiting_for_user').length;
+
+  const recent = allPosts.slice(0,2);
+  $('homeRecentPosts').innerHTML = recent.length ? recent.map(p => {
+    const photo = p.thumbUrl ? `<img src="${esc(p.thumbUrl)}" alt="">` : (p.type === 'lost' ? '⌕' : '✓');
+    return `<button class="home-mini-post" onclick="openMyPost('${p.id}')">
+      <span class="home-mini-thumb">${photo}</span><span><b>${esc(optionLabel('category',p.category)||p.category||t('common.noImage'))}</b><small>${esc(p.location||'')}</small></span></button>`;
+  }).join('') : `<div class="home-match-card"><p>${esc(t('home.noPosts'))}</p></div>`;
+
+  const m = allMatches[0];
+  if (!m){ $('homeRecentMatch').innerHTML = `<div class="home-match-card"><p>${esc(t('home.noMatches'))}</p></div>`; return; }
+  const pct = Math.round((m.similarityScore||0)*100);
+  $('homeRecentMatch').innerHTML = `<div class="home-match-card"><div class="home-match-head"><b>${esc(t('home.matches'))}</b><span class="home-score">${esc(t('home.nearby',{pct}))}</span></div><p>${esc(t('match.checkSub'))}</p><button class="btn primary small" onclick="showView('matches')">${esc(t('home.checkMatch'))}</button></div>`;
 }
 
 function toggleEye(inputId, btn){
@@ -1041,7 +1138,7 @@ async function enterApp(user){
   booted = true;
   showScreen('app');
   applyLang(); paintLangButtons();
-  showView('mine');
+  showView('home');
 }
 
 async function loadData(){
@@ -1951,7 +2048,7 @@ Object.assign(window, {
   toggleLang, setLangFromProfile, toggleEye, onPasswordInput,
   switchAuthTab, handleLogin, handleSignup, handleForgotPassword, handleLogout,
   checkEmailVerified, resendVerification,
-  showView, refreshNow, renderMine, openMyPost, openEditPost, markResolved, deleteMyPost,
+  showView, startHomePost, refreshNow, renderMine, openMyPost, openEditPost, markResolved, deleteMyPost,
   toggleOther, previewPostImage, handleCreatePost,
   onPostTypeChange, onPickupUnsureChange, onPickupNoteInput,
   togglePin,
