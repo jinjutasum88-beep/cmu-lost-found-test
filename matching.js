@@ -50,6 +50,7 @@ const SYNONYMS = [
   [["รูป","ลาย","ภาพ"], "ลาย"],
   [["แมว","cat","เหมียว"], "แมว"],
   [["หมา","สุนัข","dog"], "หมา"],
+  [["คิตตี้","kitty","hello kitty","เฮลโลคิตตี้","เฮลโล คิตตี้"], "kitty"],
 
   /* ---- คำอังกฤษ ↔ ไทย ----
      จำเป็นเพราะเว็บรองรับสองภาษา นักศึกษาต่างชาติจะเขียนคำอธิบายเป็นอังกฤษ
@@ -153,6 +154,19 @@ function dice(setA, setB){
   return (2 * inter) / (setA.size + setB.size);
 }
 
+/* วัดว่าข้อความที่สั้นกว่าถูกครอบคลุมอยู่ในข้อความที่ยาวกว่ามากแค่ไหน
+   เหมาะกับงานของหายที่ผู้เก็บได้มักพิมพ์สั้นกว่าคนทำหายมาก */
+export function shortTextCoverage(a, b){
+  const setA = ngrams(a, 3), setB = ngrams(b, 3);
+  const smaller = setA.size <= setB.size ? setA : setB;
+  const larger  = setA.size <= setB.size ? setB : setA;
+  // ข้อความสั้นมากเกินไป เช่น "ดำ" หรือ "มี" ไม่ควรใช้เป็นหลักฐานเพิ่มคะแนน
+  if (smaller.size < 3) return 0;
+  let inter = 0;
+  for (const g of smaller) if (larger.has(g)) inter++;
+  return inter / smaller.size;
+}
+
 /* ---------- 6. TF-IDF ---------- */
 /* สร้างตาราง IDF จากคลังประกาศทั้งหมด — คำที่โผล่ในหลายประกาศจะได้น้ำหนักน้อย */
 export function buildIdf(documents){
@@ -191,7 +205,12 @@ function tfidfCosine(textA, textB, idf){
 export function textSimilarity(a, b, idf){
   const d = dice(ngrams(a, 3), ngrams(b, 3));   // ทนคำสะกดผิด
   const c = tfidfCosine(a, b, idf);             // เน้นคำที่มีนัยสำคัญ
-  return 0.55 * d + 0.45 * c;
+  const base = 0.55 * d + 0.45 * c;
+  const coverage = shortTextCoverage(a, b);
+  // รายละเอียดที่มีเฉพาะฝั่งข้อความยาว (เช่น ชื่อดารา/รุ่น) ไม่ควรหักคะแนน
+  // หากใจความส่วนใหญ่ของข้อความสั้นปรากฏอยู่ในข้อความยาว
+  const lengthAware = 0.75 * coverage + 0.25 * c;
+  return Math.max(base, lengthAware);
 }
 
 /* ---------- 8. คะแนนรวมของคู่ประกาศ ---------- */
