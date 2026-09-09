@@ -486,7 +486,7 @@
       <div class="home-wrap">
         <div class="home-hero">
           <div>
-            <span class="home-kicker">✦ <span data-i18n="home.welcome"></span></span>
+            <span class="home-kicker">✦ <span data-i18n="home.welcome"></span><span id="homeWelcomeName"></span></span>
             <h2 class="home-title"><span data-i18n="home.title"></span></h2>
             <p class="home-lead" data-i18n="home.lead"></p>
             <div class="home-actions">
@@ -769,6 +769,8 @@ function updateUserDataUI(displayName, email){
   $('udEmail').textContent = email || '';
   const initial = name.trim().charAt(0).toUpperCase();
   $('userAvatarLetter').textContent = initial || 'U';
+  const welcomeName = $('homeWelcomeName');
+  if (welcomeName) welcomeName.textContent = ' ' + name; // ต่อท้าย "ยินดีต้อนรับ" ด้วยชื่อผู้ใช้
 }
 
 function openSettingsModal(type){
