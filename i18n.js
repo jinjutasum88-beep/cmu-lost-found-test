@@ -101,6 +101,7 @@ const DICT = {
     "verify.spamTip1": "อีเมลอาจใช้เวลา 1–5 นาที ลองรอสักครู่แล้วกดปุ่มตรวจสอบ",
     "verify.spamTip2": "ตรวจในกล่องจดหมายขยะ (Spam / Junk) และแท็บ Promotions",
     "verify.spamTip3": "ผู้ส่งคือ noreply@cmu-lost-found-final.firebaseapp.com — กด \"ไม่ใช่จดหมายขยะ\" เพื่อให้ครั้งหน้าเข้ากล่องหลัก",
+    "verify.usedTip": "หากลิงก์ขึ้นว่าหมดอายุหรือถูกใช้แล้ว ให้กลับมาหน้านี้ ระบบจะตรวจสถานะให้อัตโนมัติ เพราะบัญชีอาจยืนยันสำเร็จแล้ว",
 
     /* ---------- เมนู ---------- */
     "nav.mine": "ประกาศของฉัน",
@@ -333,6 +334,7 @@ const DICT = {
     "verify.spamTip1": "It can take 1–5 minutes. Wait a moment, then press the check button.",
     "verify.spamTip2": "Check your Spam / Junk folder and the Promotions tab.",
     "verify.spamTip3": "The sender is noreply@cmu-lost-found-final.firebaseapp.com — mark it \"Not spam\" so future emails reach your inbox.",
+    "verify.usedTip": "If the link says it expired or was already used, return to this page. We will check automatically because your account may already be verified.",
 
     "nav.mine": "My posts",
     "nav.create": "New post",
