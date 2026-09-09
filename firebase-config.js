@@ -9,7 +9,7 @@ export const firebaseConfig = {
 };
 
 // URL จริงของเว็บบน GitHub Pages (ต้องลงท้ายด้วย /)
-export const SITE_URL = "https://jinjutasum88-beep.github.io/cmu-lost-found-final/";
+export const SITE_URL = "https://jinjutasum88-beep.github.io/cmu-lost-found-test/";
 
 // ปลายทางที่ผู้ใช้จะถูกพากลับมาหลังกดลิงก์ในอีเมล
 //
