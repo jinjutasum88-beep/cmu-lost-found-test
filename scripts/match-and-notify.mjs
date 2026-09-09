@@ -213,6 +213,7 @@ async function cleanupOrphans() {
     ]);
     if (!lost.exists || !found.exists) {
       await d.ref.delete();
+      await db.collection("matchContacts").doc(d.id).delete().catch(() => {});
       await db.collection("embeddings").doc(m.lostPostId).delete().catch(() => {});
       await db.collection("embeddings").doc(m.foundPostId).delete().catch(() => {});
       n++;
@@ -307,7 +308,24 @@ async function runMatching() {
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       };
 
-      const ref = await db.collection("matches").add(match);
+      const ref = db.collection("matches").doc();
+      const contactRef = db.collection("matchContacts").doc(ref.id);
+      const batch = db.batch();
+      batch.set(ref, match);
+      batch.set(contactRef, {
+        participantIds: [lostPost.authorId, foundPost.authorId],
+        lostContact: {
+          name: lostPost.authorName || "",
+          email: lostPost.authorEmail || ""
+        },
+        foundContact: {
+          name: foundPost.authorName || "",
+          email: foundPost.authorEmail || "",
+          pickupNote: foundPost.pickupNote || ""
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      await batch.commit();
       created++;
 
       // ---------- แจ้งเจ้าของประกาศของหาย ----------
@@ -368,9 +386,8 @@ async function runMatching() {
    ส่วนที่ 2 — เปิดเผยข้อมูลติดต่อ
    -------------------------------------------------------------------
    เงื่อนไข: matchStatus ต้องเป็น 'accepted' ซึ่งจะเกิดขึ้นได้ก็ต่อเมื่อ
-   เจ้าของของหายยืนยันว่าใช่ (waiting_for_user → awaiting_finder)
-   และผู้ที่เก็บของได้ยินยอมให้เปิดเผยอีเมล (awaiting_finder → accepted)
-   ถ้าฝ่ายใดฝ่ายหนึ่งปฏิเสธ จะไม่มีการแลกข้อมูลติดต่อเลย
+   เจ้าของของหายยืนยันว่าใช่ (waiting_for_user → accepted)
+   หน้าเว็บอ่านข้อมูลจาก matchContacts ได้ทันที ส่วนงานนี้ส่งอีเมลยืนยันภายหลัง
    =================================================================== */
 async function revealContacts() {
   const snap = await db.collection("matches")
