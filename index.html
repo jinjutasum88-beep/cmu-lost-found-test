@@ -1029,7 +1029,19 @@ async function loadData(){
   const ms = await getDocs(query(collection(db,'matches'), where('participantIds','array-contains',CURRENT_UID)));
   allMatches = ms.docs.map(d => ({ id:d.id, ...d.data() }))
                       .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  await Promise.all(allMatches.filter(m => m.matchStatus === 'accepted').map(loadContactForMatch));
   updateBadge();
+}
+
+async function loadContactForMatch(m){
+  if (!m || m.matchStatus !== 'accepted') return m;
+  try{
+    const contactSnap = await getDoc(doc(db,'matchContacts',m.id));
+    if (contactSnap.exists()) Object.assign(m, contactSnap.data(), { contactRevealed:true });
+  }catch(err){
+    console.warn('โหลดข้อมูลติดต่อไม่สำเร็จ:', err.message);
+  }
+  return m;
 }
 function pinnedIds(){ return Array.isArray(profile?.pinnedPostIds) ? profile.pinnedPostIds : []; }
 
@@ -1523,9 +1535,48 @@ function contactBlock(m, myPost){
 
   return `<div id="animatedContactCard" class="contactreveal">✓ ${esc(t('match.confirmed', { name: them?.name || '-', email: them?.email || '-' }))}
     ${(iAmLost && them?.pickupNote) ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(27,122,95,.2)"><b>${esc(t('match.pickupNoteLabel'))}:</b> ${esc(them.pickupNote)}</div>` : ''}
+    <div style="margin-top:10px"><button class="btn small accent" onclick="openConfirmedMatch('${m.id}')">${esc(t('match.viewDetail'))}</button></div>
     ${resolved ? `<div style="margin-top:6px">✓ ${esc(t('match.closed'))}</div>`
       : (myPost ? `<div style="margin-top:8px"><button class="btn small accent" onclick="markResolved('${myPost.id}')">✓ ${esc(t('match.markReturned'))}</button></div>` : '')}
   </div>`;
+}
+
+async function openConfirmedMatch(matchId){
+  const m = allMatches.find(x => x.id === matchId);
+  if (!m || m.matchStatus !== 'accepted') return;
+  if (!m.contactRevealed) await loadContactForMatch(m);
+  const iAmLost = m.lostAuthorId === CURRENT_UID;
+  const item = iAmLost ? (m.foundSnap || {}) : (m.lostSnap || {});
+  const them = iAmLost ? m.foundContact : m.lostContact;
+  if (!them){ rerender(); return; }
+  const email = String(them.email || '');
+  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="this.remove()">
+    <div class="modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true" style="max-width:560px;padding:0;overflow:hidden">
+      <div style="padding:28px;text-align:center;background:linear-gradient(135deg,var(--purple),#9b72df);color:#fff">
+        <div style="font-size:34px;margin-bottom:8px">✓</div>
+        <h3 style="font-size:20px;margin:0">${esc(t('match.detailTitle'))}</h3>
+        <div style="font-size:12.5px;opacity:.86;margin-top:5px">${esc(t('match.detailSub'))}</div>
+      </div>
+      <div style="padding:24px">
+        <div class="match-item-card" style="box-shadow:none;border:1px solid var(--line);display:grid;grid-template-columns:90px 1fr">
+          <div class="match-photo" style="height:100%;min-height:100px">${item.thumbUrl ? `<img src="${esc(item.thumbUrl)}" alt="">` : esc(t('common.noImage'))}</div>
+          <div class="match-body">
+            <span class="stamp ${iAmLost ? 'found' : 'lost'}">${esc(typeLabel(iAmLost ? 'found' : 'lost'))}</span>
+            <h3 style="margin:8px 0 4px">${esc(optionLabel('category',item.category || ''))}</h3>
+            <div class="match-desc">${esc(item.description || '')}</div>
+          </div>
+        </div>
+        ${iAmLost ? `<div class="note-box" style="margin-top:16px"><b>${esc(t('match.pickupBox'))}</b><div style="margin-top:8px">${esc(them.pickupNote || '-')}</div></div>` : ''}
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+          <div style="font-size:12px;color:var(--ink-soft);margin-bottom:8px">${esc(t('match.contactFinder'))}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--paper-2);padding:14px;border-radius:14px;flex-wrap:wrap">
+            <div><b>${esc(them.name || '-')}</b><div style="font-size:13px;color:var(--ink-soft)">${esc(email)}</div></div>
+            ${email ? `<a class="btn small accent" href="mailto:${encodeURIComponent(email)}">${esc(t('match.sendEmail'))}</a>` : ''}
+          </div>
+        </div>
+        <button class="btn" style="width:100%;margin-top:18px" onclick="this.closest('.modal-bg').remove()">${esc(t('match.backToList'))}</button>
+      </div>
+    </div></div>`;
 }
 
 function renderMatches(){
@@ -1603,15 +1654,18 @@ function renderMatchDetail(){
 
 async function matchDecision(isMatch){
   const m = verifyQueue[verifyIdx]; if (!m) return;
-  const status = isMatch ? 'awaiting_finder' : 'rejected';
+  const status = isMatch ? 'accepted' : 'rejected';
   await updateDoc(doc(db,'matches',m.id), { matchStatus: status });
   m.matchStatus = status;
   if (isMatch){
+    await loadContactForMatch(m);
     for (const o of allMatches.filter(x => x.lostPostId === m.lostPostId && x.id !== m.id && x.matchStatus === 'waiting_for_user')){
       await updateDoc(doc(db,'matches',o.id), { matchStatus:'rejected' });
       o.matchStatus = 'rejected';
     }
-    updateBadge(); showView('matches'); return;
+    updateBadge(); showView('matches');
+    setTimeout(() => openConfirmedMatch(m.id), 0);
+    return;
   }
   verifyIdx++; updateBadge(); renderMatchDetail();
 }
@@ -1866,7 +1920,7 @@ Object.assign(window, {
   toggleOther, previewPostImage, handleCreatePost,
   onPostTypeChange, onPickupUnsureChange, onPickupNoteInput,
   togglePin,
-  openMatchPage, matchDecision,
+  openMatchPage, matchDecision, openConfirmedMatch,
   sendResetFromProfile, deleteAccount,
   openAdminCat, openAdminPost, exportStats,
   finderDecision, openReport, sendReport, adminHidePost, adminDeletePost, markReportHandled,
