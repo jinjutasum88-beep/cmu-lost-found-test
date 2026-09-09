@@ -10,7 +10,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
-  normalize, tokenize, hasReadableText, textSimilarity, buildIdf,
+  normalize, tokenize, hasReadableText, textSimilarity, shortTextCoverage, buildIdf,
   scorePair, findMatches, passesHardFilter, cosineSimilarity,
   MATCH_THRESHOLD, MAX_MATCHES
 } from "../matching.js";
@@ -115,6 +115,30 @@ describe("textSimilarity", () => {
       const s = textSimilarity(a, b, null);
       assert.ok(s >= 0 && s <= 1, `${a}/${b} ได้ ${s}`);
     }
+  });
+});
+
+describe("ข้อความสั้นเทียบกับข้อความยาว", () => {
+  test("รายละเอียดส่วนเกินในข้อความยาวไม่ทำให้คู่จริงตกเกณฑ์", () => {
+    const target = {
+      id: "lost-short-long", authorId: "u1", type: "lost", status: "active",
+      category: "กระเป๋าสตางค์", color: "ดำ", location: "หอพักนักศึกษา (หอใน)",
+      eventDate: "2026-09-09", description: "มีบัตรคอนพี่แทฮยอนอยู่ช่องใส่รูป"
+    };
+    const candidate = {
+      id: "found-short-long", authorId: "u2", type: "found", status: "active",
+      category: "กระเป๋าสตางค์", color: "ดำ", location: "หอพักนักศึกษา (หอใน)",
+      eventDate: "2026-09-09", description: "มีบัตรคอนด้านใน"
+    };
+    assert.equal(findMatches(target, [candidate]).length, 1);
+  });
+
+  test("คิตตี้กับ kitty ถูกทำให้เป็นคำเดียวกัน", () => {
+    assert.equal(normalize("ลายคิตตี้").replace(/\s/g, ""), normalize("ลาย kitty").replace(/\s/g, ""));
+  });
+
+  test("ข้อความสั้นเกินไปไม่ถูกเพิ่มคะแนนด้วย coverage", () => {
+    assert.equal(shortTextCoverage("ดำ", "กระเป๋าสีดำใบใหญ่"), 0);
   });
 });
 
