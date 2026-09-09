@@ -1373,14 +1373,17 @@ async function handleCreatePost(e){
         type: ptype, category: finalCategory, color, description: desc, location,
         eventDate: $('pDate').value, pickupNote,
         thumbUrl: thumbData || postById(editingPostId)?.thumbUrl || '',
-        hasImage: !!imageData || postById(editingPostId)?.hasImage || false
+        hasImage: !!imageData || postById(editingPostId)?.hasImage || false,
+        // กลับเข้าคิวให้ระบบจับคู่ใหม่ เพราะคำอธิบาย/หมวดหมู่/สถานที่อาจเปลี่ยนไป
+        processed: autoCategorized,
+        autoCategorized
       });
       if (imageData) {
         await setDoc(doc(db, 'postImages', editingPostId), { authorId: CURRENT_UID, data: imageData });
       }
       const idx = allPosts.findIndex(x => x.id === editingPostId);
       if (idx !== -1) {
-        allPosts[idx] = { ...allPosts[idx], type: ptype, category: finalCategory, color, description: desc, location, eventDate: $('pDate').value, pickupNote, thumbUrl: thumbData || allPosts[idx].thumbUrl };
+        allPosts[idx] = { ...allPosts[idx], type: ptype, category: finalCategory, color, description: desc, location, eventDate: $('pDate').value, pickupNote, thumbUrl: thumbData || allPosts[idx].thumbUrl, processed: autoCategorized, autoCategorized };
       }
       editingPostId = null;
       $('postSubmitBtn').querySelector('.btn-label').textContent = t('create.submit');
