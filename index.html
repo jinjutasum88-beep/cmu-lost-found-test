@@ -1006,7 +1006,10 @@ async function enterApp(user){
   updateUserDataUI(profile.displayName || user.displayName, user.email);
 
   if (profile.lang && profile.lang !== getLang()) setLang(profile.lang);
-  $('adminTab').classList.toggle('hidden', !IS_ADMIN);
+ $('adminTab').classList.toggle(
+  'hidden',
+  !(IS_ADMIN || profile?.role === 'admin')
+);
 
   fillSelects();
   const today = new Date().toISOString().slice(0,10);
