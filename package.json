@@ -5,8 +5,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node --test tests/*.test.mjs",
-    "test:coverage": "node --test --experimental-test-coverage tests/*.test.mjs",
+    "test": "node --test tests",
+    "test:coverage": "node --test --experimental-test-coverage tests",
     "match": "node scripts/match-and-notify.mjs",
     "evaluate": "node scripts/evaluate.mjs"
   },
