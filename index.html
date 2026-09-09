@@ -17,7 +17,6 @@
     --shadow:0 10px 26px -14px rgba(91,50,168,.35);
     --shadow-sm:0 4px 12px -6px rgba(91,50,168,.25);
     --radius:16px;
-    --header-h:84px; /* overwritten live by JS to match the real header height */
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -36,7 +35,9 @@
   .stamp.lost{color:var(--lost);background:var(--lost-soft)}
   .stamp.found{color:var(--found);background:var(--found-soft)}
 
-  header.top{position:sticky;top:0;z-index:30;background:var(--card);box-shadow:var(--shadow-sm);padding:14px 22px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:0 0 22px 22px}
+  /* header กับเมนูตอนนี้เกาะกันเป็นก้อนเดียว (.app-topbar) เลยไม่ต้อง sticky แยกกันอีกต่อไป */
+  .app-topbar{position:sticky;top:0;z-index:30}
+  header.top{background:var(--card);box-shadow:var(--shadow-sm);padding:14px 22px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:0 0 22px 22px}
   .brand{display:flex;align-items:center;gap:12px;min-width:0}
   .brand .tagicon{width:38px;height:38px;flex:none;border-radius:12px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Prompt',sans-serif;font-weight:600;color:#fff;font-size:14px}
   .brand h1{font-size:18px;margin:0;line-height:1.15}
@@ -114,7 +115,7 @@
   .tips ul{margin:0;padding-left:18px}
 
   #appScreen{max-width:1080px;margin:0 auto;padding:0 20px 80px}
-  nav.tabs{display:flex;gap:3px;overflow-x:auto;padding:6px;margin:-10px 14px 22px;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 12px 24px -16px rgba(91,50,168,.38);position:sticky;top:calc(var(--header-h) - 10px);z-index:20;scrollbar-width:none}
+  nav.tabs{display:flex;gap:3px;overflow-x:auto;padding:6px;margin:-10px 14px 22px;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 12px 24px -16px rgba(91,50,168,.38);position:relative;z-index:20;scrollbar-width:none}
   nav.tabs::-webkit-scrollbar{display:none}
   nav.tabs button{white-space:nowrap;padding:10px 18px;border-radius:999px;border:none;margin:0;background:transparent;font-size:14px;cursor:pointer;color:var(--ink-soft);font-weight:500;display:flex;align-items:center;gap:6px}
   nav.tabs button.active{background:var(--purple);color:#fff;font-weight:600}
@@ -336,7 +337,7 @@
   .home-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}
   .home-step{display:flex;gap:10px;align-items:flex-start;padding:12px}.home-step-num{width:28px;height:28px;border-radius:9px;background:var(--purple-soft);color:var(--purple);display:grid;place-items:center;font-weight:600;flex:none}.home-step b{display:block;font-size:13px}.home-step small{color:var(--ink-soft);font-size:11px}
   @media(max-width:760px){.home-wrap{padding:30px 20px 22px}.home-hero{grid-template-columns:1fr}.home-title{font-size:30px}.home-art{height:245px}.home-lower{grid-template-columns:1fr}.home-recent-grid{grid-template-columns:1fr}.home-steps{grid-template-columns:1fr}.home-stat b{font-size:19px}}
-  @media(max-width:560px){header.top{padding:12px 12px 18px;border-radius:0 0 18px 18px}.brand{gap:9px}.brand h1{font-size:15px}.brand p{display:none}.userchip{gap:5px}.user-avatar-btn{width:38px;height:38px}.userchip>.btn.small{width:34px;height:34px;padding:0}.userchip>.langbtn{padding:5px 8px}nav.tabs{margin-top:-9px;margin-inline:8px;top:calc(var(--header-h) - 9px);padding:5px}nav.tabs button{padding:9px 14px;font-size:13px}}
+  @media(max-width:560px){header.top{padding:12px 12px 18px;border-radius:0 0 18px 18px}.brand{gap:9px}.brand h1{font-size:15px}.brand p{display:none}.userchip{gap:5px}.user-avatar-btn{width:38px;height:38px}.userchip>.btn.small{width:34px;height:34px;padding:0}.userchip>.langbtn{padding:5px 8px}nav.tabs{margin-top:-9px;margin-inline:8px;padding:5px}nav.tabs button{padding:9px 14px;font-size:13px}}
 </style>
 </head>
 <body>
@@ -436,6 +437,7 @@
 
 <!-- ================= APP ================= -->
 <div id="appScreen" class="hidden">
+  <div class="app-topbar">
   <header class="top">
     <div class="brand">
       <div class="tagicon" aria-hidden="true">L&amp;F</div>
@@ -476,6 +478,7 @@
     <button onclick="showView('matches')" data-tab="matches" data-i18n="nav.matches"></button>
     <button onclick="showView('admin')" data-tab="admin" id="adminTab" class="hidden" data-i18n="nav.admin"></button>
   </nav>
+  </div>
 
   <main id="mainContent" tabindex="-1">
     <!-- HOME -->
@@ -897,22 +900,6 @@ function showScreen(which){
   $('authScreen').classList.toggle('hidden', which !== 'auth');
   $('verifyScreen').classList.toggle('hidden', which !== 'verify');
   $('appScreen').classList.toggle('hidden', which !== 'app');
-  if (which === 'app') updateHeaderHeightVar();
-}
-
-// เมนู (nav.tabs) ต้องเกาะติดใต้ header พอดี ไม่ว่า header จะสูงเท่าไหร่
-// (สูงไม่เท่ากันตามขนาดจอ/ภาษา/การตัดบรรทัด) เลยวัดความสูงจริงของ header
-// แล้วเซ็ตเป็นตัวแปร CSS --header-h ให้เมนู sticky แปะขึ้นมาทับใต้ header ได้พอดีเสมอ
-function updateHeaderHeightVar(){
-  const header = document.querySelector('header.top');
-  if (!header || header.offsetHeight === 0) return;
-  document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
-}
-window.addEventListener('resize', updateHeaderHeightVar);
-window.addEventListener('load', updateHeaderHeightVar);
-if ('ResizeObserver' in window) {
-  const headerEl = document.querySelector('header.top');
-  if (headerEl) new ResizeObserver(updateHeaderHeightVar).observe(headerEl);
 }
 function showView(name){
   currentView = name;
@@ -2079,7 +2066,6 @@ Object.assign(window, {
 });
 
 applyLang();
-updateHeaderHeightVar();
 </script>
 </body>
 </html>
