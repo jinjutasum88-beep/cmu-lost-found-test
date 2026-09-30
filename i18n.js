@@ -168,6 +168,7 @@ const DICT = {
     "public.trust2": "✓ ประกาศของคุณไม่แสดงต่อสาธารณะ",
     "public.trust3": "✓ แจ้งเตือนเมื่อระบบพบรายการใกล้เคียง",
     "public.footer": "CMU LOST&FOUND · โครงงานระบบของหาย–ของพบ มหาวิทยาลัยเชียงใหม่",
+    "public.locCount": "{n} จุด",
 
     /* ---------- ประกาศของฉัน ---------- */
     "mine.title": "ประกาศของฉัน",
@@ -455,6 +456,7 @@ const DICT = {
     "public.trust2": "✓ Your posts are not shown publicly",
     "public.trust3": "✓ Notifications when a similar post is found",
     "public.footer": "CMU LOST&FOUND · Chiang Mai University lost-and-found project",
+    "public.locCount": "{n} places",
 
     "mine.title": "My posts",
     "mine.sub": "Only you can see these, and matching against other people's posts happens automatically",
