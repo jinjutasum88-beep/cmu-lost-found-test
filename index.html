@@ -467,7 +467,7 @@
   @keyframes marqslide{to{transform:translateX(-50%)}}
   @keyframes bob{50%{transform:translateY(-8px) rotate(4deg)}}
   @keyframes blobby{to{border-radius:58% 42% 44% 56%;transform:rotate(-4deg)}}
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.loc-marq{overflow-x:auto}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.loc-track{animation:marqslide 140s linear infinite!important}}
   @media (max-width:560px){.mascot{width:78px;top:-44px;right:-6px}}
 
 </style>
@@ -2287,6 +2287,7 @@ Object.assign(window, {
 });
 
 applyLang();
+renderLocMarquee(); // เติมแถบสถานที่ตั้งแต่โหลดหน้า (เดิมเติมเฉพาะตอนสลับภาษา/ล็อกอิน)
 </script>
 </body>
 </html>
