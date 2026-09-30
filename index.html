@@ -2001,7 +2001,7 @@ async function renderAdmin(){
     ]);
     posts = ps.docs.map(d => ({ id:d.id, ...d.data() }));
     matches = ms.docs.map(d => ({ id:d.id, ...d.data() }));
-    users = us.size;
+    users = us.docs.filter(d => d.data().role !== 'admin').length;
     reports = rs.docs.map(d => ({ id:d.id, ...d.data() }));
   }catch(e){
     console.error('โหลดข้อมูล Dashboard ทั้งระบบไม่สำเร็จ:', e);
