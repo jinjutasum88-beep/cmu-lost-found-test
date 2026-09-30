@@ -149,6 +149,18 @@
   .tagcard .desc{font-size:13px;color:var(--ink-soft);line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   .tagcard .meta{font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:9px}
   .colordot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
+  .tagcard.typed{flex-direction:row}
+  .tagcard.typed.lost{background:var(--lost-soft);box-shadow:0 0 0 1px #F4C0D1,var(--shadow-sm)}
+  .tagcard.typed.found{background:var(--found-soft);box-shadow:0 0 0 1px #B7E1D0,var(--shadow-sm)}
+  .type-side{width:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Prompt',sans-serif;font-weight:600;font-size:20px;letter-spacing:3px}
+  .type-side span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap}
+  .type-side.lost{background:var(--lost)}
+  .type-side.found{background:var(--found)}
+  .tagcard.typed .card-main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .tagcard.typed.lost .photo{background:#F4C0D1;color:#72243E}
+  .tagcard.typed.found .photo{background:#B7E1D0;color:#0F5240}
+  .tagcard.typed.lost .meta{border-top-color:#F4C0D1}
+  .tagcard.typed.found .meta{border-top-color:#B7E1D0}
   .status-strip{font-size:11px;text-align:center;padding:6px;font-weight:500;background:var(--found);color:#fff}
 
   .add-card-placeholder{
@@ -1333,12 +1345,13 @@ function cardHTML(p, isPinned=false){
   return `<div class="mine-card-wrap ${isPinned ? 'pinned' : ''}">
     <button type="button" class="pin-btn ${pinned?'pinned':''}" onclick="event.stopPropagation();togglePin('${p.id}')"
       aria-pressed="${pinned}" aria-label="${esc(t(pinned?'mine.unpin':'mine.pin'))}" title="${esc(t(pinned?'mine.unpin':'mine.pin'))}">${pinned?'★':'☆'}</button>
-    <button class="tagcard" onclick="openMyPost('${p.id}')">
+    <button class="tagcard typed ${p.type}" onclick="openMyPost('${p.id}')">
+      <div class="type-side ${p.type}"><span>${esc(typeLabel(p.type))}</span></div>
+      <div class="card-main">
       <div class="photo">${p.thumbUrl ? `<img src="${p.thumbUrl}" loading="lazy" alt="${esc(optionLabel('category',p.category))}" onerror="this.parentElement.textContent='${esc(t('common.noImage'))}'">` : esc(t('common.noImage'))}</div>
       <div class="body">
         <div class="toprow">
           <span class="cat">${esc(optionLabel('category', p.category))}</span>
-          <span class="stamp ${p.type}">${esc(typeLabel(p.type))}</span>
         </div>
         <div class="desc">${esc(p.description)}</div>
         <div class="meta">
@@ -1347,6 +1360,7 @@ function cardHTML(p, isPinned=false){
         </div>
       </div>
       ${p.status === 'resolved' ? `<div class="status-strip">✓ ${esc(t('common.resolved'))}</div>` : ''}
+      </div>
     </button>
   </div>`;
 }
