@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>วิธีใช้งาน | How to use – CMU LOST&FOUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#6b3fb8;--brand-soft:#efe8fa;--ink:#2a2140;--muted:#6a6280;--bg:#f6f3fc;--card:#fff;--good:#1f7a55;--good-bg:#e3f5ec;--bad:#b3345b;--bad-bg:#fbe6ed;--line:#e3dcf1}
+@media(prefers-color-scheme:dark){:root{--brand:#a98af0;--brand-soft:#2d2248;--ink:#ece8f7;--muted:#a59dbd;--bg:#17121f;--card:#221b31;--good:#6fd3a4;--good-bg:#173126;--bad:#ff8fae;--bad-bg:#3a1a27;--line:#3a2f52}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Noto Sans Thai",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+html[lang=th] .en,html[lang=en] .th{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding:20px 18px 60px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:28px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700}
+.logo b{background:var(--brand);color:#fff;border-radius:10px;padding:4px 9px;font-size:14px}
+button{font:inherit;cursor:pointer}
+.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 16px}
+.primary{background:var(--brand);color:#fff;border:0;border-radius:999px;padding:10px 22px;font-weight:600}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+h1{font-size:clamp(34px,7vw,52px);line-height:1.2;margin:0 0 10px;color:var(--brand)}
+h2{font-size:22px;margin:0 0 10px}
+.lead{font-size:18px;color:var(--muted);margin:0 0 28px}
+section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:16px}
+ol.steps{list-style:none;counter-reset:s;padding:0;margin:0}
+ol.steps li{counter-increment:s;position:relative;padding:0 0 14px 48px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;display:grid;place-items:center}
+ol.steps li:last-child{padding-bottom:0}
+.ex{display:grid;gap:10px;margin-top:12px}
+.ex div{border-radius:12px;padding:10px 14px}
+.ex .bad{background:var(--bad-bg);color:var(--bad)}
+.ex .good{background:var(--good-bg);color:var(--good)}
+ul{margin:8px 0 0;padding-left:22px}
+.warn{background:var(--brand-soft);border-radius:12px;padding:12px 16px;margin-top:12px}
+details{border-top:1px solid var(--line);padding:10px 0}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;font-weight:600}
+details p{margin:6px 0 0;color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:14px;margin-top:24px}
+footer button{background:none;border:0;color:var(--brand);text-decoration:underline}
+/* onboarding popup */
+#ob{position:fixed;inset:0;background:rgba(20,10,40,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+#ob.open{display:flex}
+.dlg{background:var(--card);border-radius:22px;max-width:420px;width:100%;padding:26px 24px 20px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.slide{display:none;text-align:center}
+.slide.on{display:block}
+.slide .ico{font-size:52px;line-height:1.2}
+.slide h3{margin:8px 0 6px;font-size:21px;color:var(--brand)}
+.slide p{margin:0;color:var(--muted)}
+.dots{display:flex;justify-content:center;gap:7px;margin:18px 0}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--brand);width:22px;border-radius:8px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.row .skip{background:none;border:0;color:var(--muted);padding:6px}
+.never{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted);margin-top:14px}
+@media(prefers-reduced-motion:no-preference){.dlg{animation:pop .25s ease-out}@keyframes pop{from{transform:scale(.94);opacity:0}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo"><b>L&amp;F</b><span>CMU LOST&amp;FOUND</span></div>
+  <button class="ghost" id="lang" aria-label="Switch language">EN</button>
+</header>
+
+<h1><span class="th">วิธีใช้งาน</span><span class="en">How to use</span></h1>
+<p class="lead">
+  <span class="th">CMU LOST&amp;FOUND คือกระดานประกาศของหายและของที่เจอ สำหรับนักศึกษาและบุคลากร มช. ระบบจะช่วยจับคู่ให้อัตโนมัติ</span>
+  <span class="en">CMU LOST&amp;FOUND is a board for lost and found items, for CMU students and staff. The system matches posts for you automatically.</span>
+</p>
+
+<section>
+  <h2><span class="th">เริ่มใช้งาน 4 ขั้นตอน</span><span class="en">Get started in 4 steps</span></h2>
+  <ol class="steps th">
+    <li><b>สมัครและเข้าสู่ระบบ</b> ด้วยอีเมล @cmu.ac.th แล้วกดลิงก์ยืนยันในอีเมล</li>
+    <li><b>กด "ลงประกาศ"</b> แล้วเลือกว่าเป็น <b>ของหาย</b> หรือ <b>พบของ</b></li>
+    <li><b>กรอกรายละเอียด</b> ประเภท สี ยี่ห้อ จุดสังเกต สถานที่ และวันเวลา แล้วกดส่ง</li>
+    <li><b>รอระบบจับคู่</b> เมื่อมีรายการที่ตรงกัน ให้กดดูรายละเอียดและติดต่อกัน</li>
+  </ol>
+  <ol class="steps en">
+    <li><b>Sign up and log in</b> with your @cmu.ac.th email, then click the verification link we send you.</li>
+    <li><b>Tap "Post"</b> and choose <b>Lost</b> or <b>Found</b>.</li>
+    <li><b>Fill in the details:</b> type, color, brand, marks, place, and date/time. Then submit.</li>
+    <li><b>Wait for a match.</b> When something matches, open it and get in touch.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="th">ลงประกาศอย่างไรให้จับคู่แม่น</span><span class="en">Write posts that match well</span></h2>
+  <div class="th"><ul>
+    <li>ระบุประเภท สี ยี่ห้อ และจุดสังเกต เช่น "มีสติกเกอร์แมวที่ฝา"</li>
+    <li>บอกสถานที่และเวลาโดยประมาณ</li>
+    <li>แนบรูปถ่าย (ถ้ามี) แต่อย่าให้เห็นเลขบัตรหรือข้อมูลส่วนตัว</li>
+  </ul></div>
+  <div class="en"><ul>
+    <li>Include the type, color, brand, and any distinctive marks, e.g. "cat sticker on the lid".</li>
+    <li>Give the approximate place and time.</li>
+    <li>Add a photo if you can, but hide ID numbers and personal details.</li>
+  </ul></div>
+  <div class="ex th">
+    <div class="bad">❌ ทำกระเป๋าหาย</div>
+    <div class="good">✅ กระเป๋าสตางค์หนังสีดำ มีพวงกุญแจหมี หายแถวโรงอาหาร เมื่อวานตอนเที่ยง</div>
+  </div>
+  <div class="ex en">
+    <div class="bad">❌ Lost my bag</div>
+    <div class="good">✅ Black leather wallet with a bear keychain, lost near the canteen yesterday at noon</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="th">เมื่อระบบเจอรายการที่ตรงกัน</span><span class="en">When the system finds a match</span></h2>
+  <div class="th"><p>เปอร์เซ็นต์ความคล้ายเป็นแค่ตัวช่วย ไม่ได้ยืนยันว่าเป็นของชิ้นเดียวกัน ให้ตรวจรายละเอียดด้วยตัวเอง และกด 👍 หรือ 👎 เพื่อบอกเราว่าจับคู่ตรงหรือไม่</p>
+  <div class="warn"><b>คนที่เก็บของได้:</b> ก่อนคืน ให้ถามสิ่งที่ไม่ได้ลงในประกาศ เช่น ของที่อยู่ข้างใน หรือเลขซีเรียล เพื่อยืนยันตัวเจ้าของ</div></div>
+  <div class="en"><p>The similarity percentage is only a hint. It does not confirm the item is yours. Check the details yourself, and tap 👍 or 👎 to tell us if the match was right.</p>
+  <div class="warn"><b>If you found the item:</b> before handing it over, ask about something not in the post, such as what is inside or a serial number, to confirm the owner.</div></div>
+</section>
+
+<section>
+  <h2><span class="th">ความเป็นส่วนตัวและความปลอดภัย</span><span class="en">Privacy and safety</span></h2>
+  <div class="th"><ul>
+    <li>ห้ามลงเลขบัตรประชาชน เลขบัตรนักศึกษาเต็ม หรือเลขบัญชี</li>
+    <li>ข้อมูลติดต่อของคุณมีเฉพาะผู้ใช้ที่ล็อกอินแล้วเท่านั้นที่เห็น</li>
+    <li>นัดรับของในที่สาธารณะ มีคนพลุกพล่าน ช่วงกลางวัน</li>
+    <!-- ซ่อนไว้ก่อน จนกว่าจะมี privacy.html
+    <li>เราเก็บข้อมูลเท่าที่จำเป็นต่อการลงประกาศและจับคู่ อ่านรายละเอียดที่ <a href="privacy.html">นโยบายความเป็นส่วนตัว</a></li>
+    -->
+  </ul></div>
+  <div class="en"><ul>
+    <li>Never post your national ID, full student ID, or bank account numbers.</li>
+    <li>Your contact details are visible only to logged-in users.</li>
+    <li>Meet in a public, busy place during the day.</li>
+    <!-- hidden until privacy.html exists
+    <li>We collect only what is needed for posting and matching. See the <a href="privacy.html">Privacy Policy</a>.</li>
+    -->
+  </ul></div>
+</section>
+
+<section>
+  <h2><span class="th">ได้ของคืนแล้วทำอะไรต่อ</span><span class="en">After you get your item back</span></h2>
+  <p class="th">เข้าไปที่ประกาศของคุณแล้วกด "ได้คืนแล้ว" เพื่อปิดประกาศ คนอื่นจะได้ไม่เสียเวลาตามหา คุณแก้ไขหรือลบประกาศได้จากเมนู "ประกาศของฉัน"</p>
+  <p class="en">Open your post and tap "Returned" to close it so others stop searching. You can edit or delete posts from "My posts".</p>
+</section>
+
+<section>
+  <h2>FAQ</h2>
+  <div class="th">
+    <details><summary>ไม่มีอีเมล มช. ใช้ได้ไหม</summary><p>ตอนนี้ใช้ได้เฉพาะอีเมล @cmu.ac.th เพื่อให้ชุมชนปลอดภัยและลดประกาศปลอม</p></details>
+    <details><summary>ประกาศอยู่ได้นานแค่ไหน</summary><p>[ใส่ระยะเวลาที่ตั้งไว้ เช่น 30 วัน] หลังจากนั้นประกาศจะถูกซ่อนอัตโนมัติ คุณต่ออายุได้</p></details>
+    <details><summary>ระบบไม่จับคู่ให้ ทำอย่างไร</summary><p>ลองแก้ข้อความให้ละเอียดขึ้น เพิ่มสี ยี่ห้อ จุดสังเกต หรือค้นหาในกระดานด้วยตัวเอง</p></details>
+    <details><summary>เจอประกาศไม่เหมาะสม แจ้งที่ไหน</summary><p>กดปุ่ม "รายงาน" ที่ประกาศนั้น</p></details>
+  </div>
+  <div class="en">
+    <details><summary>Can I join without a CMU email?</summary><p>Not at the moment. Only @cmu.ac.th emails are accepted, to keep the community safe and reduce fake posts.</p></details>
+    <details><summary>How long does a post stay up?</summary><p>[Insert your duration, e.g. 30 days]. After that it is hidden automatically. You can renew it.</p></details>
+    <details><summary>The system found no match. What now?</summary><p>Edit your post with more detail such as color, brand, and marks, or browse the board yourself.</p></details>
+    <details><summary>How do I report a bad post?</summary><p>Tap "Report" on the post.</p></details>
+  </div>
+</section>
+
+<!-- ซ่อนไว้ก่อน จนกว่าจะใส่ช่องทางติดต่อและลิงก์ Google Form
+<section>
+  <h2><span class="th">ติดต่อผู้พัฒนา</span><span class="en">Contact the developer</span></h2>
+  <p class="th">พบบั๊กหรือมีไอเดีย บอกเราได้ที่ [อีเมล / IG / Line ของคุณ] และช่วยตอบ <a href="[ลิงก์ Google Form]">แบบสอบถามสั้นๆ</a> (2 นาที) 💜</p>
+  <p class="en">Found a bug or have an idea? Reach us at [your email / IG / Line] and please fill in this <a href="[Google Form link]">2-minute survey</a> 💜</p>
+</section>
+-->
+
+<footer><button id="replay"><span class="th">ดูทัวร์แนะนำอีกครั้ง</span><span class="en">Replay the intro tour</span></button></footer>
+</div>
+
+<!-- Onboarding popup -->
+<div id="ob" role="dialog" aria-modal="true" aria-label="Welcome">
+  <div class="dlg">
+    <div class="slide on">
+      <div class="ico">🔍</div>
+      <h3><span class="th">ยินดีต้อนรับสู่ CMU LOST&amp;FOUND</span><span class="en">Welcome to CMU LOST&amp;FOUND</span></h3>
+      <p class="th">ของหายหรือเก็บของได้ ลงประกาศไว้ที่นี่ ระบบจะช่วยจับคู่ให้อัตโนมัติ</p>
+      <p class="en">Lost something or found something? Post it here and we'll match it for you.</p>
+    </div>
+    <div class="slide">
+      <div class="ico">📝</div>
+      <h3><span class="th">ลงประกาศให้ละเอียด</span><span class="en">Be specific</span></h3>
+      <p class="th">ใส่สี ยี่ห้อ จุดสังเกต สถานที่ และเวลา ยิ่งละเอียด ยิ่งจับคู่แม่น</p>
+      <p class="en">Add color, brand, marks, place, and time. More detail means better matches.</p>
+    </div>
+    <div class="slide">
+      <div class="ico">🔒</div>
+      <h3><span class="th">ปลอดภัยไว้ก่อน</span><span class="en">Stay safe</span></h3>
+      <p class="th">อย่าลงเลขบัตรเต็ม นัดรับของในที่สาธารณะ และตรวจสอบเจ้าของก่อนคืนของ</p>
+      <p class="en">Don't post full ID numbers, meet in public, and verify the owner before handing over an item.</p>
+    </div>
+    <div class="dots"><i class="on"></i><i></i><i></i></div>
+    <div class="row">
+      <button class="skip" id="obSkip"><span class="th">ข้าม</span><span class="en">Skip</span></button>
+      <button class="primary" id="obNext"><span class="th">ถัดไป</span><span class="en">Next</span></button>
+    </div>
+    <label class="never"><input type="checkbox" id="obNever"> <span class="th">ไม่ต้องแสดงอีก</span><span class="en">Don't show again</span></label>
+  </div>
+</div>
+
+<script>
+(function(){
+  var html=document.documentElement, KEY='cmulf_onboarded', LKEY='cmulf_lang';
+  function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+  function setLang(l){html.lang=l;document.getElementById('lang').textContent=l==='th'?'EN':'TH';store(LKEY,l)}
+  setLang(store(LKEY)||(navigator.language||'th').slice(0,2)==='th'?'th':'en');
+  document.getElementById('lang').onclick=function(){setLang(html.lang==='th'?'en':'th')};
+
+  var ob=document.getElementById('ob'),slides=ob.querySelectorAll('.slide'),dots=ob.querySelectorAll('.dots i'),next=document.getElementById('obNext'),i=0;
+  function show(n){i=n;slides.forEach(function(s,k){s.classList.toggle('on',k===n)});dots.forEach(function(d,k){d.classList.toggle('on',k===n)});
+    next.querySelector('.th').textContent=n===slides.length-1?'เริ่มใช้งาน':'ถัดไป';
+    next.querySelector('.en').textContent=n===slides.length-1?'Get started':'Next'}
+  function open(){show(0);ob.classList.add('open');next.focus()}
+  function close(){ob.classList.remove('open');if(document.getElementById('obNever').checked)store(KEY,'1')}
+  next.onclick=function(){i<slides.length-1?show(i+1):close()};
+  document.getElementById('obSkip').onclick=close;
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
+  document.getElementById('replay').onclick=open;
+  if(!store(KEY))open();
+})();
+</script>
+</body>
+</html>
