@@ -440,6 +440,11 @@
   .field input:focus,.field select:focus,.field textarea:focus{box-shadow:3px 3px 0 var(--purple)}
   nav.tabs{border:2.5px solid var(--ink);box-shadow:4px 4px 0 var(--sh)}
   nav.tabs button.active{border:2px solid var(--ink)}
+  /* แก้เมนูดูแปลก: พื้นทึบ (เดิมโปร่ง 92% เลยเห็นเงาเข้มของ header ทะลุเป็นแถบเทา) + แยกออกจาก header ไม่ให้เส้นซ้อนกัน + วงโฟกัสชัดชั้นเดียว */
+  nav.tabs{background:#fff;margin-top:14px}
+  nav.tabs button{border:2px solid transparent}
+  nav.tabs button:focus{outline:none}
+  nav.tabs button:focus-visible{outline:3px solid var(--butter);outline-offset:1px}
   .tabs-auth{border:2.5px solid var(--ink)}.tabs-auth button.active{border:2px solid var(--ink)}
   .typepick label{border:2.5px solid var(--ink)}
   .add-card-placeholder{border:3px dashed var(--ink)}
