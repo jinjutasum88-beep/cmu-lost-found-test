@@ -17,7 +17,7 @@
    =================================================================== */
 
 import admin from "firebase-admin";
-import { findMatches, passesHardFilter, cosineSimilarity } from "../matching.js";
+import { findCandidates, passesHardFilter, cosineSimilarity, MATCH_THRESHOLD } from "../matching.js";
 
 /* ---------- ตั้งค่าจาก GitHub Secrets ---------- */
 const {
@@ -271,9 +271,31 @@ async function runMatching() {
     }
     console.log(`ประกาศ ${newPost.id}: ผ่านด่านแรก ${shortlist.length} ใบ, มีคะแนนความหมาย ${semanticMap.size} ใบ`);
 
-    const results = findMatches(newPost, candidates,
+    const { matches: results, nearMisses } = findCandidates(newPost, candidates,
       c => (semanticMap.has(c.id) ? semanticMap.get(c.id) : null));
-    console.log(`ประกาศ ${newPost.id}: พบคู่ที่เข้าเกณฑ์ ${results.length} รายการ`);
+    console.log(`ประกาศ ${newPost.id}: พบคู่ที่เข้าเกณฑ์ ${results.length} รายการ, เกือบแมช ${nearMisses.length} รายการ`);
+
+    // ---------- บันทึกคู่ที่ "เกือบแมช" ให้แอดมินดู (ผู้ใช้ไม่เห็น ไม่แจ้งเตือน) ----------
+    // ใช้ id คงที่จากคู่ประกาศ จึงรันซ้ำแล้วไม่เกิดเอกสารซ้ำ
+    for (const r of nearMisses) {
+      const lostPost  = newPost.type === "lost" ? newPost : r.post;
+      const foundPost = newPost.type === "lost" ? r.post : newPost;
+      await db.collection("nearMisses").doc(`${lostPost.id}_${foundPost.id}`).set({
+        lostPostId: lostPost.id,   foundPostId: foundPost.id,
+        lostSnap: snapOf(lostPost), foundSnap: snapOf(foundPost),
+        similarityScore: Math.round(r.score * 100) / 100,
+        lexicalScore: Math.round((r.lexical ?? 0) * 100) / 100,
+        semanticScore: r.semantic === null || r.semantic === undefined
+          ? null : Math.round(r.semantic * 100) / 100,
+        parts: Object.fromEntries(Object.entries(r.parts).map(([k, v]) => [k, {
+          value: Math.round(v.value * 100) / 100,
+          weight: v.weight,
+          points: Math.round(v.points * 1000) / 1000
+        }])),
+        threshold: MATCH_THRESHOLD,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
 
     for (let i = 0; i < results.length; i++) {
       const r = results[i];
@@ -298,6 +320,11 @@ async function runMatching() {
         lexicalScore: Math.round((r.lexical ?? 0) * 100) / 100,
         semanticScore: r.semantic === null || r.semantic === undefined
           ? null : Math.round(r.semantic * 100) / 100,
+        parts: Object.fromEntries(Object.entries(r.parts).map(([k, v]) => [k, {
+          value: Math.round(v.value * 100) / 100,
+          weight: v.weight,
+          points: Math.round(v.points * 1000) / 1000
+        }])),
         reasons: r.reasons,
         matchRank: i + 1,
         matchStatus: "waiting_for_user",
