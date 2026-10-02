@@ -27,3 +27,14 @@ test("explainPair บอกเหตุผลที่ถูกตัดทิ�
   assert.equal(explainPair(lost, { ...found, color: "แดง" }, null).blocked, "color");
   assert.equal(explainPair(lost, { ...lost, id: "x" }, null).blocked, "sameType");
 });
+
+import { sameLabel, PRESET_CATEGORIES } from "../matching.js";
+test("หมวดที่พิมพ์เอง: นาฬิกา ≈ นาฬิกาข้อมือ แต่ของสำเร็จรูปยังแยกกัน", () => {
+  assert.ok(sameLabel("นาฬิกา", "นาฬิกาข้อมือ", PRESET_CATEGORIES));
+  assert.ok(!sameLabel("กระเป๋า", "กระเป๋าสตางค์", PRESET_CATEGORIES));
+  assert.ok(!sameLabel("นาฬิกา", "กุญแจ", PRESET_CATEGORIES));
+  const a = { id:"a", type:"found", category:"นาฬิกา", color:"เงิน", place:"หอสมุด", eventDate:"2026-09-30",
+    description:"นาฬิกาcasio หน้าปัดสีฟ้า มีวงเล็ก ๆ ข้างในอีก3 มีสนิมค่อนข้างเยอะ" };
+  const b = { ...a, id:"b", type:"lost", category:"นาฬิกาข้อมือ", description:"นาฬิกาข้อมือหน้าปัดสีฟ้า" };
+  assert.equal(explainPair(a, b, null).blocked, null);
+});
