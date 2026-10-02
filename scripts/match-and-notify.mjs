@@ -1,7 +1,7 @@
 /* ===================================================================
    match-and-notify.mjs
    -------------------------------------------------------------------
-   ทำงานบน GitHub Actions ทุกๆ 5 นาที หน้าที่หลักสามอย่าง:
+   ทำงานบน GitHub Actions ทุกๆ 15 นาที หน้าที่หลักสามอย่าง:
 
    1) จับคู่ประกาศ  — ความหมายของ processed:
         false = ยังไม่มีคู่ที่ใช้ได้ → วนมาเทียบใหม่ "ทุกรอบ" จนกว่าจะเจอคู่
@@ -226,6 +226,10 @@ async function cleanupOrphans() {
   return n;
 }
 
+/* สถิติของรอบนี้ — เขียนลง matchRuns ตอนจบรอบ ให้แอดมินดูในหน้า "คะแนนการจับคู่" */
+const runStats = { activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
+                   nearMissesWritten: 0, resetFlags: 0, markedProcessed: 0 };
+
 async function runMatching() {
   // ประกาศที่ยังเปิดอยู่ทั้งหมด ใช้เป็นตัวเลือกในการจับคู่
   const activeSnap = await db.collection("posts")
@@ -233,6 +237,7 @@ async function runMatching() {
     .limit(1000)
     .get();
   const activePosts = activeSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  runStats.activePosts = activePosts.length;
 
   let created = 0;
 
@@ -255,6 +260,7 @@ async function runMatching() {
     if (p.processed === true && !p.autoCategorized && !activeMatched.has(p.id)) {
       await db.collection("posts").doc(p.id).update({ processed: false });
       p.processed = false;
+      runStats.resetFlags++;
       console.log(`รีเซ็ต processed → false: ${p.id}`);
     }
   }
@@ -265,6 +271,7 @@ async function runMatching() {
 
   // ตั้งต้นจากประกาศที่ processed=false เท่านั้น (true = มีคู่แล้ว ไม่วน)
   const targets = activePosts.filter(p => p.processed === false);
+  runStats.targets = targets.length;
   console.log(`รอบนี้จับคู่: ${targets.length} ใบที่ยังไม่มีคู่ (processed=false), ประกาศที่เปิดอยู่ ${activePosts.length} ใบ`);
 
   for (const newPost of targets) {
@@ -279,6 +286,7 @@ async function runMatching() {
 
     // เรียก embedding เฉพาะคู่ที่ผ่านด่านหมวดหมู่+สีแล้วเท่านั้น เพื่อประหยัดโควตา API
     const shortlist = candidates.filter(c => passesHardFilter(newPost, c));
+    runStats.pairsScored += shortlist.length;
     const semanticMap = new Map();
 
     if (shortlist.length && !embeddingDisabled) {
@@ -307,6 +315,7 @@ async function runMatching() {
       const nmScore = Math.round(r.score * 100) / 100;
       if (nearMap.get(nmId) === nmScore) continue;   // คะแนนเท่าเดิม ไม่ต้องเขียนซ้ำ
       nearMap.set(nmId, nmScore);
+      runStats.nearMissesWritten++;
       await db.collection("nearMisses").doc(nmId).set({
         lostPostId: lostPost.id,   foundPostId: foundPost.id,
         lostSnap: snapOf(lostPost), foundSnap: snapOf(foundPost),
@@ -440,9 +449,11 @@ async function runMatching() {
         processed: true,
         processedAt: admin.firestore.FieldValue.serverTimestamp()
       });
+      runStats.markedProcessed++;
     }
   }
 
+  runStats.newMatches = created;
   return created;
 }
 
@@ -511,15 +522,30 @@ async function revealContacts() {
 /* ===================================================================
    MAIN
    =================================================================== */
+async function saveRunLog(extra) {
+  try {
+    await db.collection("matchRuns").add({
+      ...runStats, ...extra,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    console.error("บันทึกสถิติรอบไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message);
+  }
+}
+
 (async () => {
+  const startedAt = Date.now();
   try {
     const created = await runMatching();
     const revealed = await revealContacts();
     const cleaned = await cleanupOrphans();
     console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created}, เปิดเผยข้อมูลติดต่อ ${revealed}, เก็บกวาด ${cleaned}`);
+    await saveRunLog({ ok: true, revealed, cleaned, durationMs: Date.now() - startedAt });
     process.exit(0);
   } catch (err) {
     console.error("เกิดข้อผิดพลาด:", err);
+    await saveRunLog({ ok: false, error: String(err && err.message || err).slice(0, 300),
+                       durationMs: Date.now() - startedAt });
     process.exit(1);
   }
 })();
