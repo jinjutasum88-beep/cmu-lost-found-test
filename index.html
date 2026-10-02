@@ -302,6 +302,29 @@
   .admin-post-row .info{padding:14px}
   .admin-post-row .info h3{margin:7px 0 6px;font-size:16px}
   .admin-post-row .info p{margin:0 0 7px;font-size:12px;color:var(--ink-soft);line-height:1.5}
+  .score-link{margin-bottom:20px}
+  .score-panel{background:var(--card);border-radius:18px;box-shadow:var(--shadow-sm);padding:18px;margin-bottom:20px}
+  .score-panel h3{margin:0 0 6px;font-size:15px}
+  .score-panel .hint{font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.6}
+  .score-pick{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+  .score-pick label{font-size:12px;color:var(--ink-soft);display:block;margin-bottom:4px}
+  .score-pick select{width:100%;padding:9px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-family:inherit;font-size:13px;color:var(--ink)}
+  .score-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
+  .score-table th,.score-table td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .score-table th{font-weight:600;color:var(--ink-soft);font-size:12px}
+  .score-table td.num,.score-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .score-table tr.total td{font-weight:700;border-bottom:0}
+  .score-verdict{margin-top:10px;font-size:13px;font-weight:600}
+  .score-verdict.pass{color:var(--found)}
+  .score-verdict.fail{color:var(--lost)}
+  .score-note{font-size:12px;color:var(--ink-soft);margin:8px 0 0;line-height:1.6}
+  .score-item{background:var(--card);border-radius:14px;box-shadow:var(--shadow-sm);padding:12px 14px;margin-bottom:10px}
+  .score-item summary{cursor:pointer;display:flex;gap:12px;align-items:center;list-style:none}
+  .score-item summary::-webkit-details-marker{display:none}
+  .score-item .pct{font-family:'Prompt',sans-serif;font-weight:700;font-size:20px;color:var(--purple-deep);min-width:56px}
+  .score-item .pair{font-size:12.5px;line-height:1.55;flex:1;min-width:0}
+  .score-item .pair b{font-weight:600}
+  @media (max-width:640px){.score-pick{grid-template-columns:1fr}}
 
   .btn-submit-wrap{position:relative;width:100%}
   .fake-spinner{display:none;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;margin:0 auto}
@@ -841,11 +864,41 @@
       <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.smartTitle"></h3>
       <div class="goals" id="smartGoals"></div>
       <button class="btn small" onclick="exportStats()" style="margin-bottom:20px" data-i18n="admin.export"></button>
+      <button class="btn small primary" onclick="showView('admin-scores')" style="margin-bottom:20px" data-i18n="score.open"></button>
       <div class="admin-stats" id="adminStats"></div>
       <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.reports"></h3>
       <div id="adminReports" style="margin-bottom:22px"></div>
       <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.recent"></h3>
       <div class="grid" id="adminGrid"></div>
+    </section>
+
+    <!-- ADMIN SCORES -->
+    <section id="view-admin-scores" class="view">
+      <div class="match-page">
+        <div class="view-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div><h2 data-i18n="score.title"></h2><div class="sub" data-i18n="score.sub"></div></div>
+          <button class="btn small" onclick="showView('admin')" data-i18n="nav.admin"></button>
+        </div>
+
+        <div class="score-panel">
+          <h3 data-i18n="score.checkTitle"></h3>
+          <p class="hint" data-i18n="score.checkHint"></p>
+          <div class="score-pick">
+            <div><label for="scoreLost" data-i18n="common.lost"></label><select id="scoreLost"></select></div>
+            <div><label for="scoreFound" data-i18n="common.found"></label><select id="scoreFound"></select></div>
+            <button class="btn primary" onclick="runPairCheck()" data-i18n="score.check"></button>
+          </div>
+          <div id="scoreCheckResult"></div>
+        </div>
+
+        <h3 style="font-size:15px;margin:0 0 4px" data-i18n="score.matchesTitle"></h3>
+        <p class="score-note" style="margin:0 0 10px" data-i18n="score.matchesHint"></p>
+        <div id="scoreMatches" style="margin-bottom:22px"></div>
+
+        <h3 style="font-size:15px;margin:0 0 4px" data-i18n="score.nearTitle"></h3>
+        <p class="score-note" style="margin:0 0 10px" data-i18n="score.nearHint"></p>
+        <div id="scoreNear"></div>
+      </div>
     </section>
 
     <!-- ADMIN DETAIL -->
@@ -888,7 +941,7 @@ import {
   deleteDoc, query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
-import { hasReadableText } from "./matching.js";
+import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN } from "./matching.js";
 import { evaluatePassword } from "./password-policy.js";
 import { initLang, setLang, getLang, t, optionLabel, applyLang } from "./i18n.js";
 
@@ -1147,6 +1200,7 @@ function rerender(){
   else if (currentView === 'post-detail') renderPostDetail();
   else if (currentView === 'admin') renderAdmin();
   else if (currentView === 'admin-detail') renderAdminDetail();
+  else if (currentView === 'admin-scores') renderAdminScores();
 }
 
 function startHomePost(type){
@@ -2253,6 +2307,83 @@ function openAdminPost(id){
     </div></div>`;
 }
 
+/* ---------- คะแนนการจับคู่ (แอดมิน) ---------- */
+const pctOf = x => Math.round((x || 0) * 100);
+const postLabel = p => `${optionLabel('category',p.category)} · ${optionLabel('color',p.color)} · ${(p.description || '').slice(0,48)}`;
+
+function scoreBreakdownHTML(e){
+  if (e.blocked){
+    return `<div class="score-verdict fail">${esc(t('score.blocked.' + e.blocked))}</div>`;
+  }
+  const rows = [['color','score.color'],['desc','score.desc'],['place','score.place'],['time','score.time']]
+    .map(([k,label]) => `<tr><td>${esc(t(label))}</td>
+      <td class="num">${pctOf(e.parts[k].value)}%</td>
+      <td class="num">× ${pctOf(e.parts[k].weight)}%</td>
+      <td class="num">${(e.parts[k].points * 100).toFixed(1)}</td></tr>`).join('');
+  const pass = e.score >= MATCH_THRESHOLD;
+  return `<table class="score-table">
+      <tr><th>${esc(t('score.part'))}</th><th class="num">${esc(t('score.value'))}</th><th class="num">${esc(t('score.weight'))}</th><th class="num">${esc(t('score.points'))}</th></tr>
+      ${rows}
+      <tr class="total"><td colspan="3">${esc(t('score.total'))}</td><td class="num">${(e.score * 100).toFixed(1)} / 100</td></tr>
+    </table>
+    <div class="score-verdict ${pass?'pass':'fail'}">${esc(t(pass ? 'score.pass' : 'score.fail', { pct: pctOf(MATCH_THRESHOLD) }))}</div>`;
+}
+
+function scoreItemHTML(m){
+  const l = m.lostSnap || {}, f = m.foundSnap || {};
+  const e = { blocked: null, score: m.similarityScore || 0, parts: m.parts };
+  const detail = m.parts
+    ? scoreBreakdownHTML(e)
+    : `<p class="score-note">${esc(t('score.noParts'))}</p>`;
+  const sem = (m.semanticScore === null || m.semanticScore === undefined)
+    ? t('score.noSemantic') : pctOf(m.semanticScore) + '%';
+  return `<details class="score-item"><summary>
+      <span class="pct">${pctOf(m.similarityScore)}%</span>
+      <span class="pair"><b>${esc(t('common.lost'))}:</b> ${esc((l.description||'-').slice(0,60))}<br>
+      <b>${esc(t('common.found'))}:</b> ${esc((f.description||'-').slice(0,60))}</span>
+    </summary>
+    ${detail}
+    <p class="score-note">${esc(t('score.lexical'))}: ${pctOf(m.lexicalScore)}% · ${esc(t('score.semantic'))}: ${esc(sem)}</p>
+  </details>`;
+}
+
+async function renderAdminScores(){
+  if (!IS_ADMIN) return;
+  const box1 = $('scoreMatches'), box2 = $('scoreNear');
+  box1.innerHTML = box2.innerHTML = `<p class="sub">${esc(t('common.loading'))}</p>`;
+  try{
+    const [ps, ms, ns] = await Promise.all([
+      getDocs(collection(db,'posts')),
+      getDocs(collection(db,'matches')),
+      getDocs(collection(db,'nearMisses'))
+    ]);
+    adminPosts = ps.docs.map(d => ({ id:d.id, ...d.data() }));
+    const byScore = (a,b) => (b.similarityScore||0) - (a.similarityScore||0);
+    const ms2 = ms.docs.map(d => ({ id:d.id, ...d.data() })).sort(byScore);
+    const ns2 = ns.docs.map(d => ({ id:d.id, ...d.data() })).sort(byScore);
+    box1.innerHTML = ms2.map(scoreItemHTML).join('') || emptyState(t('score.noMatches'), '');
+    box2.innerHTML = ns2.map(scoreItemHTML).join('') || emptyState(t('score.noNear', { min: pctOf(NEAR_MISS_MIN) }), '');
+  }catch(e){
+    console.error('โหลดคะแนนการจับคู่ไม่สำเร็จ:', e);
+    box1.innerHTML = box2.innerHTML = emptyState(t('admin.loadError'), '');
+    return;
+  }
+  const opt = type => adminPosts.filter(p => p.type === type)
+    .map(p => `<option value="${esc(p.id)}">${esc(postLabel(p))}</option>`).join('');
+  $('scoreLost').innerHTML = opt('lost');
+  $('scoreFound').innerHTML = opt('found');
+  $('scoreCheckResult').innerHTML = '';
+}
+
+function runPairCheck(){
+  const a = adminPosts.find(p => p.id === $('scoreLost').value);
+  const b = adminPosts.find(p => p.id === $('scoreFound').value);
+  if (!a || !b){ $('scoreCheckResult').innerHTML = `<p class="score-note">${esc(t('score.pickBoth'))}</p>`; return; }
+  const e = explainPair(a, b, null, null);
+  $('scoreCheckResult').innerHTML = scoreBreakdownHTML(e)
+    + (e.blocked ? '' : `<p class="score-note">${esc(t('score.checkNote'))}</p>`);
+}
+
 function exportStats(){
   if (!statsCache) return;
   const d = statsCache;
@@ -2286,7 +2417,7 @@ Object.assign(window, {
   togglePin,
   openMatchPage, matchDecision, openConfirmedMatch,
   sendResetFromProfile, deleteAccount,
-  openAdminCat, openAdminPost, exportStats,
+  openAdminCat, openAdminPost, exportStats, runPairCheck,
   finderDecision, openReport, sendReport, adminHidePost, adminDeletePost, markReportHandled,
   toggleUserDropdown, closeDropdown, openSettingsModal, closeSettingsModal, saveProfileModal, savePrefsModal
 });
