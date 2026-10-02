@@ -261,6 +261,14 @@
   .panel h3{margin:0 0 4px;font-size:17px}
   .panel .psub{color:var(--ink-soft);font-size:12.5px;margin:0 0 18px;line-height:1.7}
   .panel.danger{border:1.5px solid var(--lost-soft)}
+  /* ฟอร์มในหน้าต่างตั้งค่า: ไม่ใช้กรอบ .panel (ธีมใส่ขอบหนา ทำให้ช่องกรอกชิดขอบ) */
+  .settings-form{padding:4px 2px 2px}
+  .settings-form .psub{color:var(--ink-soft);font-size:12.5px;margin:0 0 20px;line-height:1.7}
+  .settings-form .field{margin-bottom:20px}
+  .settings-form .field label{margin-bottom:8px}
+  .settings-form .hint{margin-top:6px;font-size:12px;color:var(--ink-soft)}
+  .settings-form .btn{margin-top:4px}
+  .settings-form .msgline{margin-top:12px;min-height:18px}
   
   .panel select{
     width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;
@@ -1047,7 +1055,7 @@ function openSettingsModal(type){
     const facultyOptions = CMU_FACULTIES.map(fac => `<option value="${esc(fac)}">${esc(fac)}</option>`).join('');
 
     contentEl.innerHTML = `
-      <div class="panel" style="box-shadow:none;padding:0;max-width:100%">
+      <div class="settings-form">
         <p class="psub" data-i18n="profile.displayNameHint"></p>
         <div class="field">
           <label for="prName" data-i18n="profile.displayName"></label>
@@ -1076,7 +1084,7 @@ function openSettingsModal(type){
   } else if (type === 'prefs'){
     titleEl.textContent = '🔔 การแจ้งเตือนและการแสดงผล';
     contentEl.innerHTML = `
-      <div class="panel" style="box-shadow:none;padding:0;max-width:100%">
+      <div class="settings-form">
         <div class="switch-row" style="border-top:0;padding-top:0">
           <div class="txt"><span data-i18n="profile.notifyEmail">แจ้งเตือนทางอีเมล</span><small data-i18n="profile.notifyEmailHint">รับอีเมลเมื่อมีการจับคู่สำเร็จ</small></div>
           <span class="switch"><input type="checkbox" id="prNotify" ${profile?.notifyEmail !== false ? 'checked' : ''} onchange="savePrefsModal()"><span></span></span>
@@ -1093,7 +1101,7 @@ function openSettingsModal(type){
   } else if (type === 'security'){
     titleEl.textContent = '🔒 ความปลอดภัย';
     contentEl.innerHTML = `
-      <div class="panel" style="box-shadow:none;padding:0;max-width:100%">
+      <div class="settings-form">
         <p class="psub" data-i18n="profile.changePwHint">คุณสามารถรีเซ็ตรหัสผ่านผ่านทางอีเมลของคุณได้</p>
         <button class="btn" onclick="sendResetFromProfile()">ส่งลิงก์รีเซ็ตรหัสผ่าน</button>
         <div class="msgline" id="prPwMsg" role="status" aria-live="polite"></div>
@@ -1101,12 +1109,13 @@ function openSettingsModal(type){
   } else if (type === 'danger'){
     titleEl.textContent = '⚠️ ลบบัญชีผู้ใช้';
     contentEl.innerHTML = `
-      <div class="panel danger" style="box-shadow:none;padding:0;max-width:100%">
+      <div class="settings-form">
         <p class="psub" data-i18n="profile.dangerHint">การลบบัญชีจะไม่สามารถกู้คืนข้อมูลและประกาศทั้งหมดของคุณได้</p>
         <button class="btn danger" onclick="deleteAccount()" data-i18n="profile.deleteAccount">ลบบัญชีถาวร</button>
         <div class="msgline" id="prDelMsg" role="status" aria-live="polite"></div>
       </div>`;
   }
+  applyLang();   // เนื้อหาถูกสร้างหลังแปลภาษารอบแรก ต้องแปลซ้ำ ไม่งั้นป้ายชื่อช่องจะว่าง
 }
 
 function closeSettingsModal(){
