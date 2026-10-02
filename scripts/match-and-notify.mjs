@@ -1,7 +1,7 @@
 /* ===================================================================
    match-and-notify.mjs
    -------------------------------------------------------------------
-   ทำงานบน GitHub Actions ทุกๆ 15 นาที หน้าที่หลักสามอย่าง:
+   ทำงานบน GitHub Actions ทุก ๆ 15 นาที หน้าที่หลักสามอย่าง:
 
    1) จับคู่ประกาศ  — ความหมายของ processed:
         false = ยังไม่มีคู่ที่ใช้ได้ → วนมาเทียบใหม่ "ทุกรอบ" จนกว่าจะเจอคู่
@@ -20,6 +20,7 @@
    =================================================================== */
 
 import admin from "firebase-admin";
+import { appendRunRow, runToRow } from "./sheets-log.mjs";
 import { findCandidates, passesHardFilter, cosineSimilarity, MATCH_THRESHOLD } from "../matching.js";
 
 /* ---------- ตั้งค่าจาก GitHub Secrets ---------- */
@@ -29,6 +30,8 @@ const {
   SENDER_EMAIL,
   GEMINI_API_KEY,
   EMBEDDING_MODEL = "gemini-embedding-001",
+  GOOGLE_SHEET_ID,                 // (ไม่บังคับ) ถ้าตั้งไว้ จะต่อแถวสถิติทุกรอบลงชีตนี้
+  GOOGLE_SHEET_TAB = "Runs",
   SENDER_NAME = "CMU LOST&FOUND",
   SITE_URL = "https://jinjutasum88-beep.github.io/cmu-lost-found-final/"
 } = process.env;
@@ -530,6 +533,15 @@ async function saveRunLog(extra) {
     });
   } catch (e) {
     console.error("บันทึกสถิติรอบไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message);
+  }
+  if (GOOGLE_SHEET_ID) {
+    try {
+      await appendRunRow({ serviceAccount: JSON.parse(FIREBASE_SERVICE_ACCOUNT), sheetId: GOOGLE_SHEET_ID,
+                           tab: GOOGLE_SHEET_TAB, row: runToRow(runStats, extra) });
+      console.log("ต่อแถวลง Google Sheet แล้ว");
+    } catch (e) {
+      console.error("เขียน Google Sheet ไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message);
+    }
   }
 }
 
