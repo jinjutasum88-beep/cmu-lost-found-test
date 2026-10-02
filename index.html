@@ -891,6 +891,10 @@
           <div id="scoreCheckResult"></div>
         </div>
 
+        <h3 style="font-size:15px;margin:0 0 4px" data-i18n="score.runsTitle"></h3>
+        <p class="score-note" style="margin:0 0 10px" data-i18n="score.runsHint"></p>
+        <div id="scoreRuns" style="margin-bottom:22px;overflow-x:auto"></div>
+
         <h3 style="font-size:15px;margin:0 0 4px" data-i18n="score.matchesTitle"></h3>
         <p class="score-note" style="margin:0 0 10px" data-i18n="score.matchesHint"></p>
         <div id="scoreMatches" style="margin-bottom:22px"></div>
@@ -938,7 +942,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc,
-  deleteDoc, query, where, serverTimestamp
+  deleteDoc, query, where, orderBy, limit, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
 import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN } from "./matching.js";
@@ -2347,8 +2351,30 @@ function scoreItemHTML(m){
   </details>`;
 }
 
+function runsTableHTML(runs){
+  if (!runs.length) return emptyState(t('score.noRuns'), '');
+  const when = r => r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString(getLang() === 'en' ? 'en-GB' : 'th-TH') : '-';
+  const rows = runs.map(r => `<tr>
+    <td>${esc(when(r))}</td>
+    <td class="num">${r.targets ?? '-'}</td><td class="num">${r.pairsScored ?? '-'}</td>
+    <td class="num"><b>${r.newMatches ?? '-'}</b></td><td class="num">${r.nearMissesWritten ?? '-'}</td>
+    <td class="num">${r.resetFlags ?? '-'}</td>
+    <td>${r.ok === false ? `<span title="${esc(r.error || '')}">❌ ${esc(t('score.runFail'))}</span>` : '✅ ' + esc(t('score.runOk'))}</td></tr>`).join('');
+  return `<table class="score-table"><tr><th>${esc(t('score.runTime'))}</th>
+    <th class="num">${esc(t('score.runTargets'))}</th><th class="num">${esc(t('score.runPairs'))}</th>
+    <th class="num">${esc(t('score.runNew'))}</th><th class="num">${esc(t('score.runNear'))}</th>
+    <th class="num">${esc(t('score.runReset'))}</th><th></th></tr>${rows}</table>`;
+}
+
 async function renderAdminScores(){
   if (!IS_ADMIN) return;
+  try{
+    const rs = await getDocs(query(collection(db,'matchRuns'), orderBy('createdAt','desc'), limit(20)));
+    $('scoreRuns').innerHTML = runsTableHTML(rs.docs.map(d => d.data()));
+  }catch(e){
+    console.error('โหลดสถิติรอบจับคู่ไม่สำเร็จ:', e);
+    $('scoreRuns').innerHTML = emptyState(t('admin.loadError'), '');
+  }
   const box1 = $('scoreMatches'), box2 = $('scoreNear');
   box1.innerHTML = box2.innerHTML = `<p class="sub">${esc(t('common.loading'))}</p>`;
   try{
