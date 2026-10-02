@@ -942,7 +942,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc,
-  deleteDoc, query, where, orderBy, limit, serverTimestamp
+  deleteDoc, query, where, orderBy, limit, startAfter, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
 import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN } from "./matching.js";
@@ -2366,15 +2366,83 @@ function runsTableHTML(runs){
     <th class="num">${esc(t('score.runReset'))}</th><th></th></tr>${rows}</table>`;
 }
 
-async function renderAdminScores(){
-  if (!IS_ADMIN) return;
+/* ---- รอบจับคู่: โหลดทีละ 20 + โหลดเพิ่ม + ส่งออก CSV ---- */
+const RUNS_PREVIEW = 5, RUNS_PAGE = 20;
+let runsState = { rows: [], last: null, done: false, expanded: false };
+
+function paintRuns(){
+  const box = $('scoreRuns'), st = runsState;
+  const shown = st.expanded ? st.rows : st.rows.slice(0, RUNS_PREVIEW);
+  const btns = [];
+  if (!st.expanded){
+    if (!st.done || st.rows.length > RUNS_PREVIEW)
+      btns.push(`<button class="btn small primary" onclick="expandRuns()">${esc(t('score.runsAll'))}</button>`);
+  } else {
+    if (!st.done) btns.push(`<button class="btn small" onclick="loadRuns(false)">${esc(t('score.runsMore'))}</button>`);
+    btns.push(`<button class="btn small" onclick="collapseRuns()">${esc(t('score.runsLess'))}</button>`);
+  }
+  btns.push(`<button class="btn small" onclick="exportRunsCsv()">${esc(t('score.runsExport'))}</button>`);
+  box.innerHTML = `<div style="${st.expanded ? 'max-height:440px;overflow:auto' : ''}">${runsTableHTML(shown)}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+      <span class="score-note">${esc(t('score.runsShown', { n: shown.length }))}</span>${btns.join('')}
+    </div>`;
+}
+
+async function loadRuns(reset){
+  if (reset) runsState = { rows: [], last: null, done: false, expanded: false };
+  const size = runsState.expanded ? RUNS_PAGE : RUNS_PREVIEW;
   try{
-    const rs = await getDocs(query(collection(db,'matchRuns'), orderBy('createdAt','desc'), limit(20)));
-    $('scoreRuns').innerHTML = runsTableHTML(rs.docs.map(d => d.data()));
+    const parts = [orderBy('createdAt','desc')];
+    if (runsState.last) parts.push(startAfter(runsState.last));
+    parts.push(limit(size));
+    const rs = await getDocs(query(collection(db,'matchRuns'), ...parts));
+    runsState.rows.push(...rs.docs.map(d => d.data()));
+    if (rs.docs.length) runsState.last = rs.docs[rs.docs.length - 1];
+    if (rs.docs.length < size) runsState.done = true;
+    paintRuns();
   }catch(e){
     console.error('โหลดสถิติรอบจับคู่ไม่สำเร็จ:', e);
     $('scoreRuns').innerHTML = emptyState(t('admin.loadError'), '');
   }
+}
+function expandRuns(){
+  runsState.expanded = true;
+  if (runsState.rows.length <= RUNS_PREVIEW && !runsState.done) loadRuns(false); else paintRuns();
+}
+function collapseRuns(){ runsState.expanded = false; paintRuns(); }
+
+/* ดึงทุกรอบ (ทีละ 500) แล้วดาวน์โหลดเป็น CSV — เปิดใน Google Sheets/Excel ได้ (มี BOM ให้ภาษาไทยไม่เพี้ยน) */
+async function exportRunsCsv(){
+  try{
+    const cols = ['createdAt','activePosts','targets','pairsScored','newMatches','nearMissesWritten',
+                  'resetFlags','markedProcessed','revealed','cleaned','durationMs','ok','error'];
+    const all = []; let last = null;
+    for (;;){
+      const parts = [orderBy('createdAt','desc')];
+      if (last) parts.push(startAfter(last));
+      parts.push(limit(500));
+      const rs = await getDocs(query(collection(db,'matchRuns'), ...parts));
+      rs.docs.forEach(d => all.push(d.data()));
+      if (rs.docs.length < 500) break;
+      last = rs.docs[rs.docs.length - 1];
+    }
+    const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const line = r => cols.map(c => cell(c === 'createdAt'
+      ? (r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toISOString() : '') : r[c])).join(',');
+    const csv = '\ufeff' + cols.join(',') + '\n' + all.map(line).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `match-runs-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(a.href);
+  }catch(e){
+    console.error('ส่งออกสถิติไม่สำเร็จ:', e);
+    alert(t('admin.loadError'));
+  }
+}
+
+async function renderAdminScores(){
+  if (!IS_ADMIN) return;
+  loadRuns(true);
   const box1 = $('scoreMatches'), box2 = $('scoreNear');
   box1.innerHTML = box2.innerHTML = `<p class="sub">${esc(t('common.loading'))}</p>`;
   try{
@@ -2443,7 +2511,7 @@ Object.assign(window, {
   togglePin,
   openMatchPage, matchDecision, openConfirmedMatch,
   sendResetFromProfile, deleteAccount,
-  openAdminCat, openAdminPost, exportStats, runPairCheck,
+  openAdminCat, openAdminPost, exportStats, runPairCheck, loadRuns, expandRuns, collapseRuns, exportRunsCsv,
   finderDecision, openReport, sendReport, adminHidePost, adminDeletePost, markReportHandled,
   toggleUserDropdown, closeDropdown, openSettingsModal, closeSettingsModal, saveProfileModal, savePrefsModal
 });
