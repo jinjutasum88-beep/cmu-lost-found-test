@@ -213,6 +213,24 @@ export function textSimilarity(a, b, idf){
   return Math.max(base, lengthAware);
 }
 
+
+/* ---------- เทียบหมวดหมู่/สี ที่ผู้ใช้พิมพ์เองได้ ----------
+   ผู้ใช้เลือก "อื่นๆ" แล้วพิมพ์เอง เช่น "นาฬิกา" กับ "นาฬิกาข้อมือ" จึงเทียบด้วย === ไม่ได้
+   กติกา: ค่าจากรายการสำเร็จรูปเทียบตรงตัวเหมือนเดิม (กัน "กระเป๋า" ไปชน "กระเป๋าสตางค์")
+   แต่ถ้ามีฝั่งใดฝั่งหนึ่งพิมพ์เอง ให้ถือว่าตรงกันเมื่อคำหนึ่งอยู่ในอีกคำ */
+export const PRESET_CATEGORIES = ["กระเป๋า","กุญแจ","โทรศัพท์","บัตรนักศึกษา","กระเป๋าสตางค์","หูฟัง","เอกสาร","เสื้อผ้า","อื่นๆ"];
+export const PRESET_COLORS = ["ดำ","ขาว","แดง","น้ำเงิน","เขียว","เหลือง","ชมพู","เทา","น้ำตาล","อื่นๆ"];
+
+export function sameLabel(a, b, presets = []){
+  if (a === b) return true;
+  if (presets.includes(a) && presets.includes(b)) return false;
+  const x = normalize(a).replace(/ /g, ""), y = normalize(b).replace(/ /g, "");
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [s, l] = x.length <= y.length ? [x, y] : [y, x];
+  return s.length >= 3 && l.includes(s);
+}
+
 /* ---------- 8. คะแนนรวมของคู่ประกาศ ---------- */
 export const MATCH_THRESHOLD = 0.70;   // แจ้งเตือนเมื่อ ≥ 70%
 export const MAX_MATCHES = 3;          // เอาสูงสุด 3 อันดับ
@@ -241,11 +259,11 @@ export const MAX_NEAR_MISSES = 3;
  */
 export function explainPair(postA, postB, idf, semantic = null){
   if (postA.type === postB.type) return { blocked: "sameType" };
-  if (postA.category !== postB.category) return { blocked: "category" };
+  if (!sameLabel(postA.category, postB.category, PRESET_CATEGORIES)) return { blocked: "category" };
 
   // สี: ตรงกัน = เต็ม, ฝั่งใดฝั่งหนึ่งระบุ "อื่นๆ" = ให้ครึ่งคะแนน, ต่างกัน = ตัดทิ้ง
   let colorScore;
-  if (postA.color === postB.color) colorScore = 1;
+  if (sameLabel(postA.color, postB.color, PRESET_COLORS)) colorScore = 1;
   else if (postA.color === "อื่นๆ" || postB.color === "อื่นๆ") colorScore = 0.5;
   else return { blocked: "color" };
 
@@ -300,7 +318,7 @@ export function scorePair(postA, postB, idf, semantic = null){
 /* อธิบายให้ผู้ใช้เข้าใจว่าทำไมระบบถึงคิดว่าตรงกัน */
 function buildReasons(a, b, lexical, semantic, placeScore, gap){
   const r = [`หมวดหมู่ตรงกัน (${a.category})`];
-  if (a.color === b.color) r.push(`สีตรงกัน (${a.color})`);
+  if (sameLabel(a.color, b.color, PRESET_COLORS)) r.push(`สีตรงกัน (${a.color})`);
   if (lexical >= 0.4) r.push(`คำอธิบายใช้คำคล้ายกัน ${Math.round(lexical * 100)}%`);
   if (semantic !== null && semantic !== undefined && semantic >= 0.6)
     r.push(`ความหมายของคำอธิบายใกล้เคียงกัน ${Math.round(semantic * 100)}%`);
@@ -355,8 +373,8 @@ export function findMatches(target, candidates, semanticOf = null){
 /* คู่ที่ "มีสิทธิ์" ถูกจับ — ใช้กรองก่อนเรียก embedding เพื่อประหยัดโควตา API */
 export function passesHardFilter(a, b){
   if (a.type === b.type) return false;
-  if (a.category !== b.category) return false;
-  if (a.color !== b.color && a.color !== "อื่นๆ" && b.color !== "อื่นๆ") return false;
+  if (!sameLabel(a.category, b.category, PRESET_CATEGORIES)) return false;
+  if (!sameLabel(a.color, b.color, PRESET_COLORS) && a.color !== "อื่นๆ" && b.color !== "อื่นๆ") return false;
   return true;
 }
 
