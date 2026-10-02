@@ -227,27 +227,35 @@ const placeOf = p => p.place || p.location || "";
 const dateOf  = p => p.eventDate
   || (p.createdAt?.seconds ? new Date(p.createdAt.seconds * 1000) : null);
 
-export function scorePair(postA, postB, idf, semantic = null){
-  // เงื่อนไขบังคับ: ต้องเป็นคนละฝั่ง (หาย vs พบ) และหมวดหมู่ตรงกัน
-  if (postA.type === postB.type) return null;
-  if (postA.category !== postB.category) return null;
+/* น้ำหนักของแต่ละองค์ประกอบในคะแนนรวม (รวมกันได้ 1.00) */
+export const WEIGHTS = { color: 0.20, desc: 0.55, place: 0.15, time: 0.10 };
+
+/* เกณฑ์ "เกือบแมช" — คู่ที่คะแนนอยู่ระหว่างค่านี้ถึง MATCH_THRESHOLD จะถูกบันทึกให้แอดมินดู
+   (ผู้ใช้ไม่เห็นและไม่ถูกแจ้งเตือน) */
+export const NEAR_MISS_MIN = 0.45;
+export const MAX_NEAR_MISSES = 3;
+
+/**
+ * อธิบายคะแนนของคู่ประกาศแบบละเอียด — ใช้ทั้งในตัวจับคู่จริงและหน้าแอดมิน
+ * ถ้าไม่ผ่านด่านบังคับ คืน { blocked: "sameType" | "category" | "color" } แทนคะแนน
+ */
+export function explainPair(postA, postB, idf, semantic = null){
+  if (postA.type === postB.type) return { blocked: "sameType" };
+  if (postA.category !== postB.category) return { blocked: "category" };
 
   // สี: ตรงกัน = เต็ม, ฝั่งใดฝั่งหนึ่งระบุ "อื่นๆ" = ให้ครึ่งคะแนน, ต่างกัน = ตัดทิ้ง
   let colorScore;
   if (postA.color === postB.color) colorScore = 1;
   else if (postA.color === "อื่นๆ" || postB.color === "อื่นๆ") colorScore = 0.5;
-  else return null;
+  else return { blocked: "color" };
 
-  // ---------- ความคล้ายของคำอธิบาย ----------
   // ชั้นที่ 1 (lexical): ดูที่ "ตัวอักษร" — เก่งเรื่องคำเฉพาะ ยี่ห้อ เลขรุ่น คำสะกดผิด
   const lexical = textSimilarity(postA.description, postB.description, idf);
 
   // ชั้นที่ 2 (semantic): ดูที่ "ความหมาย" จาก embedding — เก่งเรื่องคำต่างที่หมายถึงของเดียวกัน
-  // เช่น "เป้" กับ "กระเป๋าสะพาย" ไม่มีตัวอักษรร่วมกันเลย แต่ความหมายใกล้กันมาก
   // ถ้าเรียก embedding ไม่ได้ (semantic = null) จะใช้เฉพาะชั้นที่ 1
-  const descSim = (semantic === null || semantic === undefined)
-    ? lexical
-    : 0.5 * lexical + 0.5 * semantic;
+  const hasSemantic = semantic !== null && semantic !== undefined;
+  const descSim = hasSemantic ? 0.5 * lexical + 0.5 * semantic : lexical;
 
   const pa = placeOf(postA), pb = placeOf(postB);
   const placeScore = (pa && pa === pb) ? 1
@@ -260,16 +268,32 @@ export function scorePair(postA, postB, idf, semantic = null){
                   : gap <= 7  ? 0.8
                   : gap <= 30 ? 0.5 : 0.2;
 
-  const score =
-      0.20 * colorScore   // ผ่านด่านหมวดหมู่+สีมาแล้ว ให้เป็นคะแนนฐาน
-    + 0.55 * descSim      // น้ำหนักหลักอยู่ที่ความคล้ายของคำอธิบาย
-    + 0.15 * placeScore
-    + 0.10 * timeScore;
+  const parts = {
+    color: { value: colorScore, weight: WEIGHTS.color, points: WEIGHTS.color * colorScore },
+    desc:  { value: descSim,    weight: WEIGHTS.desc,  points: WEIGHTS.desc  * descSim },
+    place: { value: placeScore, weight: WEIGHTS.place, points: WEIGHTS.place * placeScore },
+    time:  { value: timeScore,  weight: WEIGHTS.time,  points: WEIGHTS.time  * timeScore }
+  };
+  const score = Math.min(1, parts.color.points + parts.desc.points
+                          + parts.place.points + parts.time.points);
 
   return {
-    score: Math.min(1, score),
-    descSim, lexical, semantic,
+    blocked: null,
+    score, descSim, lexical, semantic: hasSemantic ? semantic : null,
+    parts, gap,
     reasons: buildReasons(postA, postB, lexical, semantic, placeScore, gap)
+  };
+}
+
+export function scorePair(postA, postB, idf, semantic = null){
+  // เงื่อนไขบังคับ: ต้องเป็นคนละฝั่ง (หาย vs พบ), หมวดหมู่ตรงกัน, สีไม่ขัดกัน
+  const e = explainPair(postA, postB, idf, semantic);
+  if (e.blocked) return null;
+  return {
+    score: e.score,
+    descSim: e.descSim, lexical: e.lexical, semantic: e.semantic,
+    parts: e.parts,
+    reasons: e.reasons
   };
 }
 
@@ -293,22 +317,39 @@ function buildReasons(a, b, lexical, semantic, placeScore, gap){
  * @param {Function} semanticOf ฟังก์ชันรับ candidate แล้วคืนคะแนนความหมาย 0-1
  *                              (จาก embedding) หรือ null ถ้าคำนวณไม่ได้
  */
-export function findMatches(target, candidates, semanticOf = null){
+export function findCandidates(target, candidates, semanticOf = null){
   // TF-IDF ต้องการคลังข้อมูลที่ใหญ่พอจึงจะให้น้ำหนักคำได้ถูก
   // ถ้ามีประกาศน้อยกว่า 10 ใบ ค่า IDF จะเพี้ยน (คำที่โผล่ 2 ใน 2 ใบถูกลดน้ำหนักทั้งที่สำคัญ)
   // กรณีนั้นให้ใช้ค่าน้ำหนักเท่ากันหมดแทน
   const corpus = [target, ...candidates].map(p => p.description || "");
   const idf = corpus.length >= 10 ? buildIdf(corpus) : null;
 
-  const results = [];
+  const matches = [], nearMisses = [];
   for (const c of candidates){
     if (c.id === target.id) continue;
     if (c.status === "resolved") continue;
     const semantic = semanticOf ? semanticOf(c) : null;
     const s = scorePair(target, c, idf, semantic);
-    if (s && s.score >= MATCH_THRESHOLD) results.push({ post: c, ...s });
+    if (!s) continue;
+    if (s.score >= MATCH_THRESHOLD) matches.push({ post: c, ...s });
+    else if (s.score >= NEAR_MISS_MIN) nearMisses.push({ post: c, ...s });
   }
-  return results.sort((x, y) => y.score - x.score).slice(0, MAX_MATCHES);
+  const byScore = (x, y) => y.score - x.score;
+  return {
+    matches: matches.sort(byScore).slice(0, MAX_MATCHES),
+    nearMisses: nearMisses.sort(byScore).slice(0, MAX_NEAR_MISSES)
+  };
+}
+
+/**
+ * หาคู่ที่ดีที่สุดให้ประกาศหนึ่งใบ (เฉพาะคู่ที่ผ่านเกณฑ์ MATCH_THRESHOLD)
+ * @param {object} target       ประกาศที่เพิ่งลงใหม่
+ * @param {Array}  candidates   ประกาศอื่นๆ ที่ยังเปิดอยู่
+ * @param {Function} semanticOf ฟังก์ชันรับ candidate แล้วคืนคะแนนความหมาย 0-1
+ *                              (จาก embedding) หรือ null ถ้าคำนวณไม่ได้
+ */
+export function findMatches(target, candidates, semanticOf = null){
+  return findCandidates(target, candidates, semanticOf).matches;
 }
 
 /* คู่ที่ "มีสิทธิ์" ถูกจับ — ใช้กรองก่อนเรียก embedding เพื่อประหยัดโควตา API */
