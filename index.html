@@ -874,6 +874,7 @@
       <button class="btn small" onclick="exportStats()" style="margin-bottom:20px" data-i18n="admin.export"></button>
       <button class="btn small primary" onclick="showView('admin-scores')" style="margin-bottom:20px" data-i18n="score.open"></button>
       <div class="admin-stats" id="adminStats"></div>
+      <div id="adminMatchFlow" class="score-note" style="margin:-6px 0 20px;line-height:1.9"></div>
       <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.reports"></h3>
       <div id="adminReports" style="margin-bottom:22px"></div>
       <h3 style="font-size:15px;margin:0 0 10px" data-i18n="admin.recent"></h3>
@@ -1503,6 +1504,8 @@ async function refreshNow(silent){
     await loadData();
     const after = JSON.stringify([allPosts.map(p=>p.id+p.status), allMatches.map(m=>m.id+m.matchStatus+m.contactRevealed)]);
     if (before !== after && currentView !== 'match-detail') rerender();
+    // แอดมินกด ↻ เอง: โหลดตัวเลขแดชบอร์ดทั้งระบบใหม่ด้วย (ไม่ทำในรอบอัตโนมัติ เพื่อไม่ให้กินโควตา)
+    else if (!silent && IS_ADMIN && currentView === 'admin') renderAdmin();
   }catch(err){ console.error(err); }
   finally{
     refreshing = false;
@@ -2190,6 +2193,7 @@ async function renderAdmin(){
   if (!IS_ADMIN){
     $('smartGoals').innerHTML = '';
     $('adminStats').innerHTML = '';
+    $('adminMatchFlow').innerHTML = '';
     $('adminReports').innerHTML = '';
     $('adminGrid').innerHTML = emptyState(t('admin.loadError'), '');
     return;
@@ -2242,6 +2246,16 @@ async function renderAdmin(){
   ];
   $('adminStats').innerHTML = cards.map(([k,l,v]) =>
     `<button class="admin-stat" onclick="openAdminCat('${k}')"><div class="num">${v}</div><div class="label">${esc(l)}</div></button>`).join('');
+
+  // ภาพรวมคู่ที่ระบบจับได้ทั้งหมด แยกตามสถานะ — การ์ด "จับคู่สำเร็จ" นับเฉพาะคู่ที่ยืนยันครบแล้ว
+  const by = s => matches.filter(m => m.matchStatus === s).length;
+  const chip = (label, n) => `<span style="display:inline-block;background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:2px 10px;margin:0 6px 4px 0">${esc(label)} <b>${n}</b></span>`;
+  $('adminMatchFlow').innerHTML =
+    `<div><b>${esc(t('admin.flowTotal', { n: matches.length }))}</b> — ${esc(t('admin.flowHint'))}</div>` +
+    chip(t('admin.flowWaitOwner'), by('waiting_for_user')) +
+    chip(t('admin.flowWaitFinder'), by('awaiting_finder')) +
+    chip(t('admin.flowAccepted'), by('accepted')) +
+    chip(t('admin.flowRejected'), by('rejected') + by('declined'));
 
   $('adminGrid').innerHTML = posts.slice(0,24).map(p => adminCardHTML(p)).join('') || emptyState(t('admin.noData'),'');
 }
