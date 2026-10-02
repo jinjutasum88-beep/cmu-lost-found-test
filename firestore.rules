@@ -106,6 +106,20 @@ service cloud.firestore {
                     );
     }
 
+    // ---------- คู่ที่ "เกือบแมช" (คะแนนต่ำกว่าเกณฑ์) ----------
+    // เซิร์ฟเวอร์เขียนเท่านั้น และให้เฉพาะแอดมินอ่าน เพื่อดูว่าทำไมบางคู่ไม่ถูกจับ
+    match /nearMisses/{id} {
+      allow read: if verifiedCmu() && isAdmin();
+      allow write: if false;
+    }
+
+    // ---------- สถิติของแต่ละรอบจับคู่ ----------
+    // เซิร์ฟเวอร์เขียนเท่านั้น และให้เฉพาะแอดมินอ่าน
+    match /matchRuns/{id} {
+      allow read: if verifiedCmu() && isAdmin();
+      allow write: if false;
+    }
+
     // ---------- การรายงานเนื้อหาไม่เหมาะสม ----------
     match /reports/{reportId} {
       allow read:   if isAdmin();
