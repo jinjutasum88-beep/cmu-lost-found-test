@@ -3,8 +3,11 @@
    -------------------------------------------------------------------
    ทำงานบน GitHub Actions ทุกๆ 5 นาที หน้าที่หลักสามอย่าง:
 
-   1) จับคู่ประกาศใหม่  — อ่านประกาศที่ processed == false
-      แล้ววิเคราะห์ด้วย NLP ใน matching.js สร้างเอกสารใน matches
+   1) จับคู่ประกาศ  — ความหมายของ processed:
+        false = ยังไม่มีคู่ที่ใช้ได้ → วนมาเทียบใหม่ "ทุกรอบ" จนกว่าจะเจอคู่
+        true  = มีคู่แล้ว (หรือเป็นประกาศที่ระบบจัดหมวดเองเพราะไม่มีตัวอักษร) → ไม่วน
+      ถ้าคู่ถูกปฏิเสธ (rejected/declined) ประกาศจะกลับเป็น false แล้วหาคู่ใหม่
+      คู่ที่เคยสร้างแล้วจะถูกข้าม จึงไม่ส่งอีเมลซ้ำ
 
    2) ส่งอีเมลแจ้งเตือน — เมื่อเจอคู่ ส่งอีเมลหาทั้งสองฝ่าย
 
@@ -224,17 +227,6 @@ async function cleanupOrphans() {
 }
 
 async function runMatching() {
-  // ประกาศที่ยังไม่ได้ประมวลผล
-  const pendingSnap = await db.collection("posts")
-    .where("processed", "==", false)
-    .limit(50)
-    .get();
-
-  if (pendingSnap.empty) {
-    console.log("ไม่มีประกาศใหม่ที่ต้องจับคู่");
-    return 0;
-  }
-
   // ประกาศที่ยังเปิดอยู่ทั้งหมด ใช้เป็นตัวเลือกในการจับคู่
   const activeSnap = await db.collection("posts")
     .where("status", "==", "active")
@@ -244,14 +236,45 @@ async function runMatching() {
 
   let created = 0;
 
-  for (const docSnap of pendingSnap.docs) {
-    const newPost = { id: docSnap.id, ...docSnap.data() };
+  // คู่ที่เคยสร้างแล้ว (ไม่ว่าสถานะอะไร) — ตัดออกก่อนเทียบ เพื่อไม่ให้ 3 อันดับถูกคู่เก่ากินที่
+  // และเก็บ id ของประกาศที่ "ยังมีคู่ที่ใช้งานอยู่" (ไม่ถูกปฏิเสธ) ไว้ตัดสินค่า processed
+  const existingPairs = new Set();
+  const activeMatched = new Set();
+  (await db.collection("matches").select("lostPostId", "foundPostId", "matchStatus").get())
+    .forEach(d => {
+      existingPairs.add(`${d.get("lostPostId")}_${d.get("foundPostId")}`);
+      if (!["rejected", "declined"].includes(d.get("matchStatus"))) {
+        activeMatched.add(d.get("lostPostId")); activeMatched.add(d.get("foundPostId"));
+      }
+    });
+  const pairKey = (a, b) => a.type === "lost" ? `${a.id}_${b.id}` : `${b.id}_${a.id}`;
+
+  // เก็บกวาดค่าเก่า: processed=true แต่ไม่มีคู่ที่ใช้งานอยู่ (เช่น ถูกประมวลผลครั้งเดียวแล้วไม่เจอคู่,
+  // หรือคู่ถูกปฏิเสธ) ให้กลับเป็น false จะได้วนหาคู่ใหม่ — ยกเว้นประกาศที่ระบบจัดหมวดเอง (autoCategorized)
+  for (const p of activePosts) {
+    if (p.processed === true && !p.autoCategorized && !activeMatched.has(p.id)) {
+      await db.collection("posts").doc(p.id).update({ processed: false });
+      p.processed = false;
+      console.log(`รีเซ็ต processed → false: ${p.id}`);
+    }
+  }
+  // คะแนนเกือบแมชที่บันทึกไว้แล้ว — เขียนใหม่เฉพาะเมื่อคะแนนเปลี่ยน (ประหยัดโควตา write)
+  const nearMap = new Map();
+  (await db.collection("nearMisses").select("similarityScore").get())
+    .forEach(d => nearMap.set(d.id, d.get("similarityScore")));
+
+  // ตั้งต้นจากประกาศที่ processed=false เท่านั้น (true = มีคู่แล้ว ไม่วน)
+  const targets = activePosts.filter(p => p.processed === false);
+  console.log(`รอบนี้จับคู่: ${targets.length} ใบที่ยังไม่มีคู่ (processed=false), ประกาศที่เปิดอยู่ ${activePosts.length} ใบ`);
+
+  for (const newPost of targets) {
 
     // ไม่จับคู่กับประกาศของตัวเอง และไม่จับคู่กับประกาศที่ปิดไปแล้ว
     const candidates = activePosts.filter(p =>
       p.id !== newPost.id &&
       p.authorId !== newPost.authorId &&
-      p.status === "active"
+      p.status === "active" &&
+      !existingPairs.has(pairKey(newPost, p))
     );
 
     // เรียก embedding เฉพาะคู่ที่ผ่านด่านหมวดหมู่+สีแล้วเท่านั้น เพื่อประหยัดโควตา API
@@ -280,7 +303,11 @@ async function runMatching() {
     for (const r of nearMisses) {
       const lostPost  = newPost.type === "lost" ? newPost : r.post;
       const foundPost = newPost.type === "lost" ? r.post : newPost;
-      await db.collection("nearMisses").doc(`${lostPost.id}_${foundPost.id}`).set({
+      const nmId = `${lostPost.id}_${foundPost.id}`;
+      const nmScore = Math.round(r.score * 100) / 100;
+      if (nearMap.get(nmId) === nmScore) continue;   // คะแนนเท่าเดิม ไม่ต้องเขียนซ้ำ
+      nearMap.set(nmId, nmScore);
+      await db.collection("nearMisses").doc(nmId).set({
         lostPostId: lostPost.id,   foundPostId: foundPost.id,
         lostSnap: snapOf(lostPost), foundSnap: snapOf(foundPost),
         similarityScore: Math.round(r.score * 100) / 100,
@@ -354,6 +381,10 @@ async function runMatching() {
       });
       await batch.commit();
       created++;
+      existingPairs.add(`${lostPost.id}_${foundPost.id}`);
+      activeMatched.add(lostPost.id); activeMatched.add(foundPost.id);
+      // คู่นี้ผ่านเกณฑ์แล้ว ไม่ควรค้างอยู่ในรายการ "เกือบแมช"
+      await db.collection("nearMisses").doc(`${lostPost.id}_${foundPost.id}`).delete().catch(() => {});
 
       // ---------- แจ้งเจ้าของประกาศของหาย ----------
       if (await wantsEmail(lostPost.authorId)) await sendEmail({
@@ -400,10 +431,16 @@ async function runMatching() {
       await ref.update({ notifiedAt: admin.firestore.FieldValue.serverTimestamp() });
     }
 
-    await docSnap.ref.update({
-      processed: true,
-      processedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+  }
+
+  // ตีตรา processed=true เฉพาะประกาศที่ "มีคู่แล้ว" — ที่ยังไม่เจอคู่คงเป็น false เพื่อวนรอบหน้า
+  for (const p of activePosts) {
+    if (p.processed === false && activeMatched.has(p.id)) {
+      await db.collection("posts").doc(p.id).update({
+        processed: true,
+        processedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
   }
 
   return created;
