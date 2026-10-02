@@ -338,7 +338,18 @@ const DICT = {
     "score.noMatches": "ยังไม่มีคู่ที่ผ่านเกณฑ์",
     "score.nearTitle": "คู่ที่เกือบแมช",
     "score.nearHint": "ผ่านหมวดหมู่และสีแล้ว แต่คะแนนต่ำกว่าเกณฑ์ ผู้ใช้จะไม่เห็นคู่เหล่านี้",
-    "score.noNear": "ยังไม่มีคู่ที่ได้คะแนนตั้งแต่ {min}% แต่ไม่ถึงเกณฑ์"
+    "score.noNear": "ยังไม่มีคู่ที่ได้คะแนนตั้งแต่ {min}% แต่ไม่ถึงเกณฑ์",
+    "score.runsTitle": "รอบจับคู่ล่าสุด",
+    "score.runsHint": "สคริปต์จับคู่บันทึกสถิติไว้ทุกรอบ (แสดง 20 รอบล่าสุด)",
+    "score.noRuns": "ยังไม่มีบันทึกรอบจับคู่ — จะขึ้นหลังสคริปต์รอบถัดไปทำงาน",
+    "score.runTime": "เวลา",
+    "score.runTargets": "ประกาศที่ยังไม่มีคู่",
+    "score.runPairs": "คู่ที่เทียบคะแนน",
+    "score.runNew": "จับคู่ใหม่",
+    "score.runNear": "เกือบแมช",
+    "score.runReset": "รีเซ็ต",
+    "score.runOk": "ปกติ",
+    "score.runFail": "ผิดพลาด"
   },
 
   en: {
@@ -653,7 +664,18 @@ const DICT = {
     "score.noMatches": "No pairs above the threshold yet",
     "score.nearTitle": "Near misses",
     "score.nearHint": "Passed category and color but scored below the threshold. Users never see these pairs.",
-    "score.noNear": "No pairs between {min}% and the threshold yet"
+    "score.noNear": "No pairs between {min}% and the threshold yet",
+    "score.runsTitle": "Recent matching runs",
+    "score.runsHint": "The matcher logs every run (latest 20 shown)",
+    "score.noRuns": "No run logs yet — they appear after the next scheduled run",
+    "score.runTime": "Time",
+    "score.runTargets": "Unmatched posts",
+    "score.runPairs": "Pairs scored",
+    "score.runNew": "New matches",
+    "score.runNear": "Near misses",
+    "score.runReset": "Reset",
+    "score.runOk": "OK",
+    "score.runFail": "Failed"
   }
 };
 
