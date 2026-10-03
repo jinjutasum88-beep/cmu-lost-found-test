@@ -230,7 +230,7 @@ async function cleanupOrphans() {
 }
 
 /* สถิติของรอบนี้ — เขียนลง matchRuns ตอนจบรอบ ให้แอดมินดูในหน้า "คะแนนการจับคู่" */
-const runStats = { finderEmails: 0, activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
+const runStats = { pairsClosed: 0, finderEmails: 0, activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
                    nearMissesWritten: 0, resetFlags: 0, markedProcessed: 0 };
 
 async function runMatching() {
@@ -515,98 +515,8 @@ async function notifyFinders() {
   return sent;
 }
 
-async function revealContacts() {
-  const snap = await db.collection("matches")
-    .where("matchStatus", "==", "accepted")
-    .where("contactRevealed", "==", false)
-    .limit(30)
-    .get();
-
-  if (snap.empty) { console.log("ไม่มีคู่ที่ต้องเปิดเผยข้อมูลติดต่อ"); return 0; }
-
-  let done = 0;
-  for (const d of snap.docs) {
-    const m = d.data();
-    const lostPost  = (await db.collection("posts").doc(m.lostPostId).get()).data();
-    const foundPost = (await db.collection("posts").doc(m.foundPostId).get()).data();
-    if (!lostPost || !foundPost) { await d.ref.update({ contactRevealed: true }); continue; }
-
-    const lostContact  = { name: lostPost.authorName || "",  email: lostPost.authorEmail || "" };
-    const foundContact = { name: foundPost.authorName || "", email: foundPost.authorEmail || "" };
-
-    await d.ref.update({
-      lostContact, foundContact,
-      contactRevealed: true,
-      revealedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    const body = (theirLabel, them) => `
-      <p style="font-size:14px;line-height:1.8;color:#79708F;margin:0 0 18px;">
-        การจับคู่ได้รับการยืนยันแล้ว ตอนนี้คุณสามารถติดต่อกันเพื่อนัดรับ–ส่งของได้เลย
-      </p>
-      <div style="background:#DFF3EB;border-radius:14px;padding:16px;color:#1F8F6F;">
-        <div style="font-size:12px;margin-bottom:6px;">${theirLabel}</div>
-        <div style="font-weight:600;font-size:15px;">${esc(them.name || "ผู้ใช้")}</div>
-        <div style="font-size:14px;margin-top:4px;">${esc(them.email)}</div>
-      </div>
-      <p style="font-size:13px;color:#79708F;margin-top:18px;line-height:1.7;">
-        เพื่อความปลอดภัย แนะนำให้นัดรับของในที่สาธารณะภายในมหาวิทยาลัยในเวลากลางวัน
-        และตรวจสอบลักษณะของให้ตรงกันก่อนส่งมอบ
-      </p>`;
-
-    if (await wantsEmail(m.lostAuthorId)) await sendEmail({
-      to: lostContact.email, toName: lostContact.name,
-      subject: "ยืนยันการจับคู่แล้ว — ข้อมูลติดต่อผู้ที่เก็บของได้",
-      html: emailShell("ติดต่อผู้ที่เก็บของของคุณได้แล้ว", body("ผู้ที่เก็บของได้", foundContact), "เปิดเว็บ", SITE_URL)
-    });
-    if (await wantsEmail(m.foundAuthorId)) await sendEmail({
-      to: foundContact.email, toName: foundContact.name,
-      subject: "ยืนยันการจับคู่แล้ว — ข้อมูลติดต่อเจ้าของ",
-      html: emailShell("เจอเจ้าของแล้ว", body("เจ้าของของชิ้นนี้", lostContact), "เปิดเว็บ", SITE_URL)
-    });
-
-    done++;
-  }
-  return done;
-}
-
-/* ===================================================================
-   MAIN
-   =================================================================== */
-async function saveRunLog(extra) {
-  try {
-    await db.collection("matchRuns").add({
-      ...runStats, ...extra,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-  } catch (e) {
-    console.error("บันทึกสถิติรอบไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message);
-  }
-  if (GOOGLE_SHEET_ID) {
-    try {
-      await appendRunRow({ serviceAccount: JSON.parse(FIREBASE_SERVICE_ACCOUNT), sheetId: GOOGLE_SHEET_ID,
-                           tab: GOOGLE_SHEET_TAB, row: runToRow(runStats, extra) });
-      console.log("ต่อแถวลง Google Sheet แล้ว");
-    } catch (e) {
-      console.error("เขียน Google Sheet ไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message);
-    }
-  }
-}
-
-(async () => {
-  const startedAt = Date.now();
-  try {
-    const created = await runMatching();
-    runStats.finderEmails = await notifyFinders();
-    const revealed = await revealContacts();
-    const cleaned = await cleanupOrphans();
-    console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created}, เปิดเผยข้อมูลติดต่อ ${revealed}, เก็บกวาด ${cleaned}`);
-    await saveRunLog({ ok: true, revealed, cleaned, durationMs: Date.now() - startedAt });
-    process.exit(0);
-  } catch (err) {
-    console.error("เกิดข้อผิดพลาด:", err);
-    await saveRunLog({ ok: false, error: String(err && err.message || err).slice(0, 300),
-                       durationMs: Date.now() - startedAt });
-    process.exit(1);
-  }
-})();
+/* ปิดประกาศของผู้พบให้ เมื่อเจ้าของของหายกด "ได้รับคืนแล้ว" ในคู่ที่ accepted
+   (ปกติหน้าเว็บปิดให้ทันที — ส่วนนี้เป็นตาข่ายนิรภัยเผื่อหน้าเว็บทำไม่สำเร็จ)
+   จดเวลาปิดที่ pairClosedAt เพื่อไม่ต้องตรวจโพสต์ซ้ำทุกรอบ */
+async function syncResolvedPairs() {
+  const snap = await db.collection("matche
