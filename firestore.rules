@@ -23,13 +23,22 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // อ่านเอกสารคู่จับคู่ตาม id (ใช้ตรวจสิทธิ์ข้ามเอกสาร)
+    function matchDoc(id) {
+      return get(/databases/$(database)/documents/matches/$(id)).data;
+    }
+
     // ---------- โปรไฟล์ผู้ใช้ ----------
     match /users/{userId} {
       allow read:   if signedIn() && (request.auth.uid == userId || isAdmin());
       allow create: if signedIn() && request.auth.uid == userId
                     && request.resource.data.role == 'user';
       allow update: if signedIn() && request.auth.uid == userId
-                    && changedKeys().hasOnly(['displayName','phone','faculty','notifyEmail','lang','postCountDate','postCountToday']);
+                    && changedKeys().hasOnly(['displayName','phone','faculty','notifyEmail','lang','postCountDate','postCountToday','pinnedPostIds'])
+                    // ปักหมุดได้สูงสุด 3 ประกาศ (ตรงกับที่หน้าเว็บจำกัด)
+                    && (!('pinnedPostIds' in changedKeys())
+                        || (request.resource.data.pinnedPostIds is list
+                            && request.resource.data.pinnedPostIds.size() <= 3));
       allow delete: if signedIn() && request.auth.uid == userId;
     }
 
@@ -63,6 +72,16 @@ service cloud.firestore {
                        && request.resource.data.status in ['active','resolved'])
                       || (isAdmin()
                           && changedKeys().hasOnly(['status','hiddenReason','hiddenAt']))
+                      // เจ้าของของหายกด "ได้รับคืนแล้ว" -> ปิดประกาศของผู้พบในคู่ที่ยืนยันแล้วให้ด้วย
+                      // ต้องอ้างอิงคู่ (resolvedViaMatch) ที่ accepted, เป็นของเขา, ชี้มาที่โพสต์นี้,
+                      // และโพสต์ของหายของเขาถูกปิดแล้วจริง
+                      || (changedKeys().hasOnly(['status','resolvedViaMatch'])
+                          && request.resource.data.status == 'resolved'
+                          && request.resource.data.resolvedViaMatch is string
+                          && matchDoc(request.resource.data.resolvedViaMatch).lostAuthorId == request.auth.uid
+                          && matchDoc(request.resource.data.resolvedViaMatch).foundPostId == postId
+                          && matchDoc(request.resource.data.resolvedViaMatch).matchStatus == 'accepted'
+                          && get(/databases/$(database)/documents/posts/$(matchDoc(request.resource.data.resolvedViaMatch).lostPostId)).data.status == 'resolved')
                     );
 
       allow delete: if verifiedCmu() && (resource.data.authorId == request.auth.uid || isAdmin());
@@ -81,6 +100,15 @@ service cloud.firestore {
                     && request.resource.data.data.size() < 750000;
       allow delete: if verifiedCmu()
                     && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // ---------- ข้อมูลติดต่อของคู่ ----------
+    // สร้างโดยสคริปต์ตอนจับคู่ได้ เปิดให้อ่านเฉพาะผู้ร่วมคู่ และเฉพาะเมื่อคู่ถูกยืนยันครบแล้ว
+    match /matchContacts/{matchId} {
+      allow read: if verifiedCmu()
+                  && request.auth.uid in resource.data.participantIds
+                  && get(/databases/$(database)/documents/matches/$(matchId)).data.matchStatus == 'accepted';
+      allow write: if false;
     }
 
     // ---------- ผลการจับคู่ ----------
