@@ -21,6 +21,7 @@
 
 import admin from "firebase-admin";
 import { appendRunRow, runToRow } from "./sheets-log.mjs";
+import { createLifecycle } from "./lifecycle.mjs";
 import { findCandidates, passesHardFilter, cosineSimilarity, MATCH_THRESHOLD } from "../matching.js";
 
 /* ---------- ตั้งค่าจาก GitHub Secrets ---------- */
@@ -207,27 +208,6 @@ const snapOf = p => ({
   authorName: p.authorName || ""
 });
 
-/* เก็บกวาดข้อมูลที่ชี้ไปยังประกาศที่ถูกลบไปแล้ว (เช่น ผู้ใช้ลบบัญชี) */
-async function cleanupOrphans() {
-  const matches = await db.collection("matches").limit(500).get();
-  let n = 0;
-  for (const d of matches.docs) {
-    const m = d.data();
-    const [lost, found] = await Promise.all([
-      db.collection("posts").doc(m.lostPostId).get(),
-      db.collection("posts").doc(m.foundPostId).get()
-    ]);
-    if (!lost.exists || !found.exists) {
-      await d.ref.delete();
-      await db.collection("matchContacts").doc(d.id).delete().catch(() => {});
-      await db.collection("embeddings").doc(m.lostPostId).delete().catch(() => {});
-      await db.collection("embeddings").doc(m.foundPostId).delete().catch(() => {});
-      n++;
-    }
-  }
-  if (n) console.log(`ลบผลจับคู่ที่ชี้ไปยังประกาศที่ไม่มีอยู่แล้ว ${n} รายการ`);
-  return n;
-}
 
 /* สถิติของรอบนี้ — เขียนลง matchRuns ตอนจบรอบ ให้แอดมินดูในหน้า "คะแนนการจับคู่" */
 const runStats = { pairsClosed: 0, finderEmails: 0, activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
@@ -460,63 +440,50 @@ async function runMatching() {
   return created;
 }
 
-/* ===================================================================
-   ส่วนที่ 2 — เปิดเผยข้อมูลติดต่อ
-   -------------------------------------------------------------------
-   เงื่อนไข: matchStatus ต้องเป็น 'accepted' ซึ่งจะเกิดขึ้นได้ก็ต่อเมื่อ
-   เจ้าของของหายยืนยันว่าใช่ (waiting_for_user → accepted)
-   หน้าเว็บอ่านข้อมูลจาก matchContacts ได้ทันที ส่วนงานนี้ส่งอีเมลยืนยันภายหลัง
-   =================================================================== */
-/* เจ้าของของหายกด "ใช่" แล้ว (awaiting_finder) → แจ้งผู้ที่เก็บของได้ให้เข้ามากด "อนุญาต"
-   ฝั่งเว็บแก้ได้เฉพาะ matchStatus จึงให้สคริปต์เป็นคนจดเวลาที่แจ้งแล้ว (finderNotifiedAt) กันส่งซ้ำ */
-async function notifyFinders() {
-  const snap = await db.collection("matches")
-    .where("matchStatus", "==", "awaiting_finder")
-    .limit(50)
-    .get();
 
-  let sent = 0;
-  for (const d of snap.docs) {
-    const m = d.data();
-    if (m.finderNotifiedAt) continue;
+
+
+/* ===================================================================
+   MAIN
+   =================================================================== */
+const { cleanupOrphans, notifyFinders, syncResolvedPairs, revealContacts } =
+  createLifecycle({ db, admin, sendEmail, wantsEmail, esc, emailShell, itemBlock, SITE_URL });
+
+async function saveRunLog(extra) {
+  try {
+    await db.collection("matchRuns").add({
+      ...runStats, ...extra,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    console.error("บันทึกสถิติรอบไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message);
+  }
+  if (GOOGLE_SHEET_ID) {
     try {
-      const foundPost = (await db.collection("posts").doc(m.foundPostId).get()).data();
-      let ok = true;   // sendEmail คืน false เมื่อส่งไม่สำเร็จ (ไม่ throw) — ต้องเช็กเอง
-      if (foundPost && await wantsEmail(m.foundAuthorId)) {
-        ok = await sendEmail({
-          to: foundPost.authorEmail,
-          toName: foundPost.authorName,
-          subject: `เจ้าของยืนยันแล้ว — รอคุณอนุญาตแลกข้อมูลติดต่อ (${foundPost.category || "ของที่เก็บได้"})`,
-          html: emailShell(
-            "เจ้าของของยืนยันแล้ว รอคุณอนุญาต",
-            `<p style="font-size:14px;line-height:1.8;color:#79708F;margin:0 0 18px;">
-               มีผู้แจ้งว่าของที่คุณเก็บได้เป็นของเขา ระบบ<b>ยังไม่เปิดเผย</b>ข้อมูลติดต่อของคุณ
-               จนกว่าคุณจะอนุญาต
-             </p>
-             ${itemBlock("ของที่คุณเก็บได้", m.foundSnap)}
-             ${itemBlock("ของที่เจ้าของแจ้งหาย", m.lostSnap)}
-             <p style="font-size:13px;color:#79708F;margin-top:18px;line-height:1.7;">
-               เข้าเว็บไปที่ "รายการที่จับคู่" แล้วกด <b>อนุญาต แลกข้อมูลติดต่อ</b>
-               หากอนุญาต เราจะส่งข้อมูลติดต่อของทั้งสองฝ่ายทางอีเมลภายในไม่กี่นาที
-               หากไม่อนุญาต ข้อมูลของคุณจะไม่ถูกเปิดเผย
-             </p>`,
-            "ไปที่รายการจับคู่", SITE_URL
-          )
-        });
-        if (ok) sent++;
-      }
-      if (!ok) { console.error(`แจ้งผู้พบของไม่สำเร็จ (match ${d.id}) — จะลองใหม่รอบหน้า`); continue; }
-      await d.ref.update({ finderNotifiedAt: admin.firestore.FieldValue.serverTimestamp() });
+      await appendRunRow({ serviceAccount: JSON.parse(FIREBASE_SERVICE_ACCOUNT), sheetId: GOOGLE_SHEET_ID,
+                           tab: GOOGLE_SHEET_TAB, row: runToRow(runStats, extra) });
+      console.log("ต่อแถวลง Google Sheet แล้ว");
     } catch (e) {
-      // ส่งไม่สำเร็จ: ไม่จดเวลา เพื่อให้รอบหน้าลองใหม่
-      console.error(`แจ้งผู้พบของไม่สำเร็จ (match ${d.id}):`, e.message);
+      console.error("เขียน Google Sheet ไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message);
     }
   }
-  return sent;
 }
 
-/* ปิดประกาศของผู้พบให้ เมื่อเจ้าของของหายกด "ได้รับคืนแล้ว" ในคู่ที่ accepted
-   (ปกติหน้าเว็บปิดให้ทันที — ส่วนนี้เป็นตาข่ายนิรภัยเผื่อหน้าเว็บทำไม่สำเร็จ)
-   จดเวลาปิดที่ pairClosedAt เพื่อไม่ต้องตรวจโพสต์ซ้ำทุกรอบ */
-async function syncResolvedPairs() {
-  const snap = await db.collection("matche
+(async () => {
+  const startedAt = Date.now();
+  try {
+    const created = await runMatching();
+    runStats.finderEmails = await notifyFinders();
+    runStats.pairsClosed = await syncResolvedPairs();
+    const revealed = await revealContacts();
+    const cleaned = await cleanupOrphans();
+    console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created}, เปิดเผยข้อมูลติดต่อ ${revealed}, เก็บกวาด ${cleaned}`);
+    await saveRunLog({ ok: true, revealed, cleaned, durationMs: Date.now() - startedAt });
+    process.exit(0);
+  } catch (err) {
+    console.error("เกิดข้อผิดพลาด:", err);
+    await saveRunLog({ ok: false, error: String(err && err.message || err).slice(0, 300),
+                       durationMs: Date.now() - startedAt });
+    process.exit(1);
+  }
+})();
