@@ -230,7 +230,7 @@ async function cleanupOrphans() {
 }
 
 /* สถิติของรอบนี้ — เขียนลง matchRuns ตอนจบรอบ ให้แอดมินดูในหน้า "คะแนนการจับคู่" */
-const runStats = { activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
+const runStats = { finderEmails: 0, activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
                    nearMissesWritten: 0, resetFlags: 0, markedProcessed: 0 };
 
 async function runMatching() {
@@ -432,7 +432,7 @@ async function runMatching() {
           "อาจเจอเจ้าของแล้ว",
           `<p style="font-size:14px;line-height:1.8;color:#79708F;margin:0 0 18px;">
              มีคนแจ้งของหายที่ตรงกับของที่คุณเก็บได้ ระบบกำลังรอให้เจ้าของยืนยัน
-             หากยืนยันแล้วเราจะส่งข้อมูลติดต่อให้คุณทางอีเมลอีกครั้ง
+             หากเจ้าของยืนยันว่าเป็นของเขา เราจะส่งอีเมลให้คุณเข้ามากดอนุญาตแลกข้อมูลติดต่ออีกครั้ง
            </p>
            ${itemBlock("ของที่คุณเก็บได้", snapOf(foundPost))}
            ${itemBlock("ของที่มีคนแจ้งหาย", snapOf(lostPost))}`,
@@ -467,6 +467,54 @@ async function runMatching() {
    เจ้าของของหายยืนยันว่าใช่ (waiting_for_user → accepted)
    หน้าเว็บอ่านข้อมูลจาก matchContacts ได้ทันที ส่วนงานนี้ส่งอีเมลยืนยันภายหลัง
    =================================================================== */
+/* เจ้าของของหายกด "ใช่" แล้ว (awaiting_finder) → แจ้งผู้ที่เก็บของได้ให้เข้ามากด "อนุญาต"
+   ฝั่งเว็บแก้ได้เฉพาะ matchStatus จึงให้สคริปต์เป็นคนจดเวลาที่แจ้งแล้ว (finderNotifiedAt) กันส่งซ้ำ */
+async function notifyFinders() {
+  const snap = await db.collection("matches")
+    .where("matchStatus", "==", "awaiting_finder")
+    .limit(50)
+    .get();
+
+  let sent = 0;
+  for (const d of snap.docs) {
+    const m = d.data();
+    if (m.finderNotifiedAt) continue;
+    try {
+      const foundPost = (await db.collection("posts").doc(m.foundPostId).get()).data();
+      let ok = true;   // sendEmail คืน false เมื่อส่งไม่สำเร็จ (ไม่ throw) — ต้องเช็กเอง
+      if (foundPost && await wantsEmail(m.foundAuthorId)) {
+        ok = await sendEmail({
+          to: foundPost.authorEmail,
+          toName: foundPost.authorName,
+          subject: `เจ้าของยืนยันแล้ว — รอคุณอนุญาตแลกข้อมูลติดต่อ (${foundPost.category || "ของที่เก็บได้"})`,
+          html: emailShell(
+            "เจ้าของของยืนยันแล้ว รอคุณอนุญาต",
+            `<p style="font-size:14px;line-height:1.8;color:#79708F;margin:0 0 18px;">
+               มีผู้แจ้งว่าของที่คุณเก็บได้เป็นของเขา ระบบ<b>ยังไม่เปิดเผย</b>ข้อมูลติดต่อของคุณ
+               จนกว่าคุณจะอนุญาต
+             </p>
+             ${itemBlock("ของที่คุณเก็บได้", m.foundSnap)}
+             ${itemBlock("ของที่เจ้าของแจ้งหาย", m.lostSnap)}
+             <p style="font-size:13px;color:#79708F;margin-top:18px;line-height:1.7;">
+               เข้าเว็บไปที่ "รายการที่จับคู่" แล้วกด <b>อนุญาต แลกข้อมูลติดต่อ</b>
+               หากอนุญาต เราจะส่งข้อมูลติดต่อของทั้งสองฝ่ายทางอีเมลภายในไม่กี่นาที
+               หากไม่อนุญาต ข้อมูลของคุณจะไม่ถูกเปิดเผย
+             </p>`,
+            "ไปที่รายการจับคู่", SITE_URL
+          )
+        });
+        if (ok) sent++;
+      }
+      if (!ok) { console.error(`แจ้งผู้พบของไม่สำเร็จ (match ${d.id}) — จะลองใหม่รอบหน้า`); continue; }
+      await d.ref.update({ finderNotifiedAt: admin.firestore.FieldValue.serverTimestamp() });
+    } catch (e) {
+      // ส่งไม่สำเร็จ: ไม่จดเวลา เพื่อให้รอบหน้าลองใหม่
+      console.error(`แจ้งผู้พบของไม่สำเร็จ (match ${d.id}):`, e.message);
+    }
+  }
+  return sent;
+}
+
 async function revealContacts() {
   const snap = await db.collection("matches")
     .where("matchStatus", "==", "accepted")
@@ -549,6 +597,7 @@ async function saveRunLog(extra) {
   const startedAt = Date.now();
   try {
     const created = await runMatching();
+    runStats.finderEmails = await notifyFinders();
     const revealed = await revealContacts();
     const cleaned = await cleanupOrphans();
     console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created}, เปิดเผยข้อมูลติดต่อ ${revealed}, เก็บกวาด ${cleaned}`);
