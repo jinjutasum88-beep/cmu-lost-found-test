@@ -2093,7 +2093,9 @@ function renderMatchDetail(){
 
 async function matchDecision(isMatch){
   const m = verifyQueue[verifyIdx]; if (!m) return;
-  const status = isMatch ? 'accepted' : 'rejected';
+  // เจ้าของของหายกด "ใช่" → รอผู้พบอนุญาตก่อน (awaiting_finder) ตามกติกาใน firestore.rules
+  // แล้วผู้พบกดอนุญาตค่อยเป็น accepted (ดู finderDecision) — เขียน accepted ตรง ๆ จะโดน permission-denied
+  const status = isMatch ? 'awaiting_finder' : 'rejected';
   await updateDoc(doc(db,'matches',m.id), { matchStatus: status });
   m.matchStatus = status;
   if (isMatch){
