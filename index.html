@@ -1705,6 +1705,13 @@ async function markResolved(id){
   if (!confirm(t('detail.resolveConfirm'))) return;
   await updateDoc(doc(db,'posts',id), { status:'resolved' });
   const p = postById(id); if (p) p.status = 'resolved';
+  // ฝั่งของหายกด "ได้รับคืนแล้ว" -> ปิดประกาศฝั่งผู้พบให้ด้วย (rules ตรวจว่าเป็นคู่ที่ accepted ของเราจริง)
+  // ถ้าทำไม่สำเร็จ สคริปต์จับคู่จะปิดให้ในรอบถัดไป
+  const pair = allMatches.find(x => x.lostPostId === id && x.matchStatus === 'accepted' && x.lostAuthorId === CURRENT_UID);
+  if (pair){
+    try{ await updateDoc(doc(db,'posts',pair.foundPostId), { status:'resolved', resolvedViaMatch: pair.id }); }
+    catch(err){ console.warn('ปิดประกาศฝั่งผู้พบทันทีไม่สำเร็จ (สคริปต์จะปิดให้):', err.message); }
+  }
   await clearPinnedPost(id);
   rerender();
 }
