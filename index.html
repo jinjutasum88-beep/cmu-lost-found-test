@@ -811,6 +811,7 @@
             <label for="pPickupNote" data-i18n="create.pickupNote"></label>
             <textarea id="pPickupNote" rows="2" data-i18n-ph="create.pickupNotePh" oninput="onPickupNoteInput()"></textarea>
             <div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.6" data-i18n="create.pickupNoteHint"></div>
+            <div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.6" data-i18n="create.shareNotice"></div>
             <label class="pickup-check">
               <input type="checkbox" id="pPickupUnsure" onchange="onPickupUnsureChange()">
               <span data-i18n="create.pickupNoteUnsure"></span>
@@ -954,7 +955,7 @@ import {
   deleteDoc, query, where, orderBy, limit, startAfter, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
-import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN } from "./matching.js";
+import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN, PRESET_CATEGORIES, PRESET_COLORS } from "./matching.js";
 import { evaluatePassword } from "./password-policy.js";
 import { initLang, setLang, getLang, t, optionLabel, applyLang } from "./i18n.js";
 
@@ -974,8 +975,11 @@ let currentView = 'mine';
 let booted = false;
 
 const SMART_TARGETS = { users: 50, posts: 100, accuracy: 70 };
-const CATEGORIES = ["กระเป๋า","กุญแจ","โทรศัพท์","บัตรนักศึกษา","กระเป๋าสตางค์","หูฟัง","เอกสาร","เสื้อผ้า","อื่นๆ"];
-const COLORS = ["ดำ","ขาว","แดง","น้ำเงิน","เขียว","เหลือง","ชมพู","เทา","น้ำตาล","อื่นๆ"];
+// ใช้รายการเดียวกับตัวจับคู่ใน matching.js (แหล่งเดียว กันรายการสองที่ไม่ตรงกัน)
+const CATEGORIES = PRESET_CATEGORIES;
+const COLORS = PRESET_COLORS;
+// วันที่ตามเวลาเครื่องผู้ใช้ (รูปแบบ YYYY-MM-DD) — toISOString ให้วันตาม UTC ซึ่งช้ากว่าไทย 7 ชม.
+const todayLocal = () => new Date().toLocaleDateString('sv-SE');
 const PLACES = ["หอสมุดกลาง","คณะวิศวกรรมศาสตร์","คณะมนุษยศาสตร์","คณะบริหารธุรกิจ","คณะวิทยาศาสตร์","หอพักนักศึกษา (หอใน)","ศาลาอ่างแก้ว/โรงอาหาร","อาคาร 40 ปี","สวนสัก","ลานอ่างแก้ว","หอประชุมมหาวิทยาลัย","กาดหน้ามอ","จุดจอดรถ ขสมช.","สนามกีฬามหาวิทยาลัย","อื่นๆ"];
 
 // รายชื่อคณะและวิทยาลัยทั้งหมดของมหาวิทยาลัยเชียงใหม่
@@ -1441,7 +1445,7 @@ async function enterApp(user){
   $('adminTab').classList.toggle('hidden', !IS_ADMIN);
 
   fillSelects();
-  const today = new Date().toISOString().slice(0,10);
+  const today = todayLocal();
   $('pDate').value = today; $('pDate').max = today;
 
   try {
@@ -1481,7 +1485,10 @@ async function loadContactForMatch(m){
 function pinnedIds(){ return Array.isArray(profile?.pinnedPostIds) ? profile.pinnedPostIds : []; }
 
 function updateBadge(){
-  const n = allMatches.filter(m => m.lostAuthorId === CURRENT_UID && m.matchStatus === 'waiting_for_user').length;
+  // เจ้าของของหายที่ต้องตอบ + ผู้พบที่ต้องกดอนุญาต
+  const n = allMatches.filter(m =>
+    (m.lostAuthorId === CURRENT_UID && m.matchStatus === 'waiting_for_user') ||
+    (m.foundAuthorId === CURRENT_UID && m.matchStatus === 'awaiting_finder')).length;
   const badge = $('notifBadge');
   badge.textContent = n;
   if (n > 0){
@@ -1628,7 +1635,7 @@ function openEditPost(id){
   $('pColor').value = p.color;
   $('pDesc').value = p.description;
   $('pLocation').value = p.location;
-  $('pDate').value = p.eventDate || new Date().toISOString().slice(0,10);
+  $('pDate').value = p.eventDate || todayLocal();
   if (p.pickupNote) $('pPickupNote').value = p.pickupNote;
   
   $('postSubmitBtn').querySelector('.btn-label').textContent = "บันทึกการแก้ไข";
@@ -1809,7 +1816,7 @@ async function handleCreatePost(e){
   const btn = $('postSubmitBtn'), msg = $('postMsg');
   msg.textContent = '';
 
-  const today = new Date().toISOString().slice(0,10);
+  const today = todayLocal();
   const usedToday = profile?.postCountDate === today ? (profile?.postCountToday || 0) : 0;
   
   if (!editingPostId && usedToday >= DAILY_POST_LIMIT){
@@ -1907,7 +1914,7 @@ async function handleCreatePost(e){
         $('pickupNoteField').classList.add('hidden');
         $('pPickupNote').disabled = false;
         clearImage('');
-        $('pDate').value = new Date().toISOString().slice(0,10);
+        $('pDate').value = todayLocal();
         msg.style.color = autoCategorized ? 'var(--amber)' : 'var(--found)';
         msg.textContent = t(autoCategorized ? 'create.okAuto' : 'create.ok');
         setTimeout(() => showView('mine'), 1000);
@@ -2100,16 +2107,23 @@ function renderMatchDetail(){
 
 async function matchDecision(isMatch){
   const m = verifyQueue[verifyIdx]; if (!m) return;
-  // เจ้าของของหายกด "ใช่" → รอผู้พบอนุญาตก่อน (awaiting_finder) ตามกติกาใน firestore.rules
-  // แล้วผู้พบกดอนุญาตค่อยเป็น accepted (ดู finderDecision) — เขียน accepted ตรง ๆ จะโดน permission-denied
-  const status = isMatch ? 'awaiting_finder' : 'rejected';
-  await updateDoc(doc(db,'matches',m.id), { matchStatus: status });
+  // เจ้าของของหายกด "ใช่" → accepted ทันที เห็นข้อมูลติดต่อของผู้พบเลย (อีเมลยืนยันตามไปจากสคริปต์)
+  const status = isMatch ? 'accepted' : 'rejected';
+  try{
+    await updateDoc(doc(db,'matches',m.id), { matchStatus: status });
+  }catch(err){
+    console.error('บันทึกคำตอบไม่สำเร็จ:', err);
+    alert(t('match.actionFail', { msg: err.message }));
+    return;
+  }
   m.matchStatus = status;
   if (isMatch){
     await loadContactForMatch(m);
     for (const o of allMatches.filter(x => x.lostPostId === m.lostPostId && x.id !== m.id && x.matchStatus === 'waiting_for_user')){
-      await updateDoc(doc(db,'matches',o.id), { matchStatus:'rejected' });
-      o.matchStatus = 'rejected';
+      try{
+        await updateDoc(doc(db,'matches',o.id), { matchStatus:'rejected' });
+        o.matchStatus = 'rejected';
+      }catch(err){ console.warn('ปิดคู่อื่นไม่สำเร็จ:', err.message); }
     }
     updateBadge(); showView('matches');
     setTimeout(() => openConfirmedMatch(m.id), 0);
@@ -2121,7 +2135,13 @@ async function matchDecision(isMatch){
 async function finderDecision(matchId, allow){
   const m = allMatches.find(x => x.id === matchId); if (!m) return;
   const status = allow ? 'accepted' : 'declined';
-  await updateDoc(doc(db,'matches',matchId), { matchStatus: status });
+  try{
+    await updateDoc(doc(db,'matches',matchId), { matchStatus: status });
+  }catch(err){
+    console.error('บันทึกคำตอบไม่สำเร็จ:', err);
+    alert(t('match.actionFail', { msg: err.message }));
+    return;
+  }
   m.matchStatus = status;
   rerender();
 }
