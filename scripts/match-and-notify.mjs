@@ -210,7 +210,7 @@ const snapOf = p => ({
 
 
 /* สถิติของรอบนี้ — เขียนลง matchRuns ตอนจบรอบ ให้แอดมินดูในหน้า "คะแนนการจับคู่" */
-const runStats = { pairsClosed: 0, finderEmails: 0, activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
+const runStats = { maintenance: false, consentsExpired: 0, declineEmails: 0, pairsClosed: 0, finderEmails: 0, activePosts: 0, targets: 0, pairsScored: 0, newMatches: 0,
                    nearMissesWritten: 0, resetFlags: 0, markedProcessed: 0 };
 
 async function runMatching() {
@@ -412,7 +412,8 @@ async function runMatching() {
           "อาจเจอเจ้าของแล้ว",
           `<p style="font-size:14px;line-height:1.8;color:#79708F;margin:0 0 18px;">
              มีคนแจ้งของหายที่ตรงกับของที่คุณเก็บได้ ระบบกำลังรอให้เจ้าของยืนยัน
-             หากเจ้าของยืนยันว่าเป็นของเขา เราจะส่งอีเมลให้คุณเข้ามากดอนุญาตแลกข้อมูลติดต่ออีกครั้ง
+             หากเจ้าของยืนยันว่าเป็นของเขา ระบบจะส่งข้อมูลติดต่อของเจ้าของให้คุณทางอีเมล
+             และแสดงชื่อกับอีเมลของคุณให้เจ้าของเห็นด้วย
            </p>
            ${itemBlock("ของที่คุณเก็บได้", snapOf(foundPost))}
            ${itemBlock("ของที่มีคนแจ้งหาย", snapOf(lostPost))}`,
@@ -446,7 +447,7 @@ async function runMatching() {
 /* ===================================================================
    MAIN
    =================================================================== */
-const { cleanupOrphans, notifyFinders, syncResolvedPairs, revealContacts } =
+const { cleanupOrphans, notifyFinders, syncResolvedPairs, revealContacts, expireStaleConsents, notifyDeclines } =
   createLifecycle({ db, admin, sendEmail, wantsEmail, esc, emailShell, itemBlock, SITE_URL });
 
 async function saveRunLog(extra) {
@@ -474,9 +475,19 @@ async function saveRunLog(extra) {
   try {
     const created = await runMatching();
     runStats.finderEmails = await notifyFinders();
-    runStats.pairsClosed = await syncResolvedPairs();
     const revealed = await revealContacts();
-    const cleaned = await cleanupOrphans();
+
+    // งานเก็บกวาด/ตรวจย้อนหลังอ่านข้อมูลเยอะ จึงทำชั่วโมงละครั้ง (cron ทุก 15 นาที → รอบแรกของชั่วโมง)
+    // หรือเมื่อกดรันเองจากหน้า Actions เพื่อประหยัดโควตา reads
+    const maintenance = process.env.GITHUB_EVENT_NAME === "workflow_dispatch" || new Date().getUTCMinutes() < 15;
+    runStats.maintenance = maintenance;
+    let cleaned = 0;
+    if (maintenance) {
+      runStats.consentsExpired = await expireStaleConsents();
+      runStats.declineEmails = await notifyDeclines();
+      runStats.pairsClosed = await syncResolvedPairs();
+      cleaned = await cleanupOrphans();
+    }
     console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created}, เปิดเผยข้อมูลติดต่อ ${revealed}, เก็บกวาด ${cleaned}`);
     await saveRunLog({ ok: true, revealed, cleaned, durationMs: Date.now() - startedAt });
     process.exit(0);

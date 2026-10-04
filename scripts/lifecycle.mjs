@@ -5,6 +5,8 @@
      - notifyFinders     อีเมลแจ้งผู้พบเมื่อเจ้าของกดยืนยัน (awaiting_finder)
      - syncResolvedPairs ปิดประกาศผู้พบเมื่อของหายถูกทำเครื่องหมายว่าได้คืน
      - revealContacts    เปิดเผยข้อมูลติดต่อ + ส่งอีเมลเมื่อคู่เป็น accepted
+     - expireStaleConsents  ผู้พบไม่ตอบเกิน 7 วัน → ถือว่าไม่อนุญาต
+     - notifyDeclines    อีเมลแจ้งเจ้าของของหายเมื่อผู้พบไม่อนุญาต/หมดเวลา
    =================================================================== */
 
 export function createLifecycle({ db, admin, sendEmail, wantsEmail, esc, emailShell, itemBlock, SITE_URL }) {
@@ -165,5 +167,59 @@ async function revealContacts() {
   return done;
 }
 
-  return { cleanupOrphans, notifyFinders, syncResolvedPairs, revealContacts };
+  /* ผู้พบไม่ตอบเกิน N วันหลังได้รับแจ้ง → ถือว่าไม่อนุญาต (declined + expired) จะได้ไม่ค้างตลอดไป
+     ประกาศทั้งสองฝั่งจะกลับไปหาคู่ใหม่ได้เอง (ดูตรรกะ processed ใน runMatching) */
+  async function expireStaleConsents(days = 7) {
+    const snap = await db.collection("matches").where("matchStatus", "==", "awaiting_finder").limit(100).get();
+    const cutoff = Date.now() - days * 86400000;
+    let n = 0;
+    for (const d of snap.docs) {
+      const ts = d.data().finderNotifiedAt;
+      const ms = ts && ts.toMillis ? ts.toMillis() : (ts instanceof Date ? ts.getTime() : Number(ts));
+      if (!ms || ms > cutoff) continue;                 // ยังไม่เคยแจ้งผู้พบ หรือยังไม่ถึงกำหนด
+      await d.ref.update({ matchStatus: "declined", expired: true });
+      n++;
+    }
+    return n;
+  }
+
+  /* ผู้พบไม่อนุญาต (หรือหมดเวลา) → แจ้งเจ้าของของหายทางอีเมล จดเวลาที่ ownerNotifiedAt กันส่งซ้ำ */
+  async function notifyDeclines() {
+    const snap = await db.collection("matches").where("matchStatus", "==", "declined").limit(200).get();
+    let sent = 0;
+    for (const d of snap.docs) {
+      const m = d.data();
+      if (m.ownerNotifiedAt) continue;
+      try {
+        const lostPost = (await db.collection("posts").doc(m.lostPostId).get()).data();
+        let ok = true;
+        if (lostPost && await wantsEmail(m.lostAuthorId)) {
+          const why = m.expired
+            ? "ผู้ที่เก็บของได้ยังไม่ตอบรับภายในเวลาที่กำหนด"
+            : "ผู้ที่เก็บของได้ยังไม่อนุญาตให้แลกข้อมูลติดต่อ";
+          ok = await sendEmail({
+            to: lostPost.authorEmail,
+            toName: lostPost.authorName,
+            subject: "คู่ที่คุณยืนยันไว้ยังไม่สำเร็จ — ระบบจะหาคู่ใหม่ให้",
+            html: emailShell(
+              "คู่นี้ยังไม่สำเร็จ",
+              `<p style="font-size:14px;line-height:1.8;color:#79708F;margin:0 0 18px;">
+                 ${why} ประกาศของคุณยังเปิดอยู่ และระบบจะจับคู่กับของที่ถูกแจ้งเจอชิ้นอื่นให้ต่อไปโดยอัตโนมัติ
+               </p>
+               ${itemBlock("ของที่คุณแจ้งหาย", m.lostSnap)}`,
+              "ดูรายการของฉัน", SITE_URL
+            )
+          });
+          if (ok) sent++;
+        }
+        if (!ok) { console.error(`แจ้งเจ้าของของหายไม่สำเร็จ (match ${d.id}) — จะลองใหม่รอบหน้า`); continue; }
+        await d.ref.update({ ownerNotifiedAt: admin.firestore.FieldValue.serverTimestamp() });
+      } catch (e) {
+        console.error(`แจ้งเจ้าของของหายไม่สำเร็จ (match ${d.id}):`, e.message);
+      }
+    }
+    return sent;
+  }
+
+  return { cleanupOrphans, notifyFinders, syncResolvedPairs, revealContacts, expireStaleConsents, notifyDeclines };
 }
