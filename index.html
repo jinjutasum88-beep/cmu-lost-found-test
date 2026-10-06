@@ -305,6 +305,8 @@
   .admin-stat .label{font-size:12px;color:var(--ink-soft);margin-top:8px}
   .admin-detail-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
   .admin-post-row{background:var(--card);border-radius:18px;box-shadow:var(--shadow-sm);overflow:hidden;display:grid;grid-template-columns:150px 1fr;cursor:pointer;text-align:left;border:0;padding:0;font-family:inherit}
+  .admin-pair{display:grid;gap:8px;padding:10px;border:2px dashed var(--line);border-radius:22px;background:var(--paper-2)}
+  .admin-pair-head{font-size:12.5px;font-weight:700;color:var(--ink-soft);padding:0 4px}
   .admin-post-row .thumb{height:150px;background:var(--paper-2);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px}
   .admin-post-row .thumb img{width:100%;height:100%;object-fit:cover}
   .admin-post-row .info{padding:14px}
@@ -955,7 +957,7 @@ import {
   deleteDoc, query, where, orderBy, limit, startAfter, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
-import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN, PRESET_CATEGORIES, PRESET_COLORS } from "./matching.js";
+import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN, PRESET_CATEGORIES, PRESET_COLORS, returnedGroups, acceptedPairs } from "./matching.js";
 import { evaluatePassword } from "./password-policy.js";
 import { initLang, setLang, getLang, t, optionLabel, applyLang } from "./i18n.js";
 
@@ -2200,7 +2202,7 @@ async function deleteAccount(){
   }
 }
 
-let adminPosts = [], adminCat = 'all', statsCache = null;
+let adminPosts = [], adminCat = 'all', statsCache = null, adminGroups = { returned: { pairs: [], singles: [] }, accepted: [] };
 
 function accuracyFrom(list){
   const judged = list.filter(m => m.matchStatus === 'accepted' || m.matchStatus === 'rejected');
@@ -2254,11 +2256,14 @@ async function renderAdmin(){
   adminPosts = posts;
   const lost = posts.filter(p=>p.type==='lost').length;
   const found = posts.filter(p=>p.type==='found').length;
-  const resolved = posts.filter(p=>p.status==='resolved').length;
+  // "ส่งคืนสำเร็จ" นับเป็นคู่ (ของหาย + พบของ = 1) — ประกาศที่ปิดเองโดยไม่ผ่านระบบนับเดี่ยว
+  // และไม่นับประกาศที่แอดมินซ่อน (hiddenReason: 'admin' ก็ถูกตั้ง status เป็น resolved)
+  adminGroups = { returned: returnedGroups(posts, matches), accepted: acceptedPairs(posts, matches) };
+  const resolved = adminGroups.returned.pairs.length + adminGroups.returned.singles.length;
   const acc = accuracyFrom(matches);
 
   statsCache = { users, total:posts.length, lost, found, resolved,
-                 matchesTotal:matches.length, judged:acc.judged, accepted:acc.accepted, accuracy:acc.pct };
+                 matchesTotal:matches.length, judged:acc.judged, accepted:adminGroups.accepted.length, accuracy:acc.pct };
 
   $('smartGoals').innerHTML =
     goalCard(users, SMART_TARGETS.users, '', t('admin.users'), '') +
@@ -2271,7 +2276,7 @@ async function renderAdmin(){
     ['lost', t('common.lost'), lost],
     ['found', t('common.found'), found],
     ['resolved', t('admin.returned'), resolved],
-    ['accepted', t('admin.matched'), acc.accepted]
+    ['accepted', t('admin.matched'), adminGroups.accepted.length]   // นับจากชุดเดียวกับหน้ารายการข้างใน (ข้ามคู่ที่ประกาศถูกลบ)
   ];
   $('adminStats').innerHTML = cards.map(([k,l,v]) =>
     `<button class="admin-stat" onclick="openAdminCat('${k}')"><div class="num">${v}</div><div class="label">${esc(l)}</div></button>`).join('');
@@ -2337,17 +2342,8 @@ function adminCardHTML(p){
 
 function openAdminCat(k){ adminCat = k; showView('admin-detail'); }
 
-function renderAdminDetail(){
-  const labels = { all:t('admin.allPosts'), lost:t('common.lost'), found:t('common.found'),
-                   resolved:t('admin.returned'), accepted:t('admin.matched') };
-  let list = adminPosts;
-  if (adminCat === 'lost') list = adminPosts.filter(p=>p.type==='lost');
-  else if (adminCat === 'found') list = adminPosts.filter(p=>p.type==='found');
-  else if (adminCat === 'resolved' || adminCat === 'accepted') list = adminPosts.filter(p=>p.status==='resolved');
-
-  $('adminDetailTitle').textContent = labels[adminCat] || '';
-  $('adminDetailSub').textContent = t('admin.itemCount', { n:list.length });
-  $('adminDetailList').innerHTML = list.map(p => `
+function adminRowHTML(p){
+  return `
     <button class="admin-post-row" onclick="openAdminPost('${p.id}')">
       <div class="thumb">${p.thumbUrl?`<img src="${p.thumbUrl}" loading="lazy" alt="">`:esc(t('common.noImage'))}</div>
       <div class="info">
@@ -2357,7 +2353,32 @@ function renderAdminDetail(){
         <p>📍 ${esc(optionLabel('location',p.location))}</p>
         <p>${esc(t('admin.poster'))}: ${esc(p.authorName||'-')}</p>
         <p><b>${esc(p.status==='resolved'?t('common.resolved'):t('admin.inProgress'))}</b></p>
-      </div></button>`).join('') || emptyState(t('admin.noData'),'');
+      </div></button>`;
+}
+function adminPairHTML(pr){
+  return `<div class="admin-pair"><div class="admin-pair-head">🔗 ${esc(t('admin.pairHeader'))}</div>${adminRowHTML(pr.lost)}${adminRowHTML(pr.found)}</div>`;
+}
+
+function renderAdminDetail(){
+  const labels = { all:t('admin.allPosts'), lost:t('common.lost'), found:t('common.found'),
+                   resolved:t('admin.returned'), accepted:t('admin.matched') };
+  let rows, n, hint = '';
+  if (adminCat === 'resolved'){
+    const g = adminGroups.returned;
+    rows = g.pairs.map(adminPairHTML).concat(g.singles.map(adminRowHTML));
+    n = rows.length; hint = ' · ' + t('admin.returnedHint');
+  } else if (adminCat === 'accepted'){
+    rows = adminGroups.accepted.map(adminPairHTML); n = rows.length;
+  } else {
+    let list = adminPosts;
+    if (adminCat === 'lost') list = adminPosts.filter(p=>p.type==='lost');
+    else if (adminCat === 'found') list = adminPosts.filter(p=>p.type==='found');
+    rows = list.map(adminRowHTML); n = rows.length;
+  }
+
+  $('adminDetailTitle').textContent = labels[adminCat] || '';
+  $('adminDetailSub').textContent = t('admin.itemCount', { n }) + hint;
+  $('adminDetailList').innerHTML = rows.join('') || emptyState(t('admin.noData'),'');
 }
 
 function openAdminPost(id){

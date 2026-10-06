@@ -393,3 +393,25 @@ export function cosineSimilarity(vecA, vecB){
   // ค่าติดลบแปลว่า "ไม่เกี่ยวกันเลย" จึงปัดเป็น 0
   return Math.max(0, Math.min(1, cos));
 }
+
+/* จัดกลุ่มเป็น "คู่": คู่ที่ accepted และมีอย่างน้อยหนึ่งฝั่งปิดแล้ว = ส่งคืน 1 รายการ */
+export function returnedGroups(posts, matches){
+  const byId = new Map(posts.map(p => [p.id, p]));
+  const countable = p => p.status === 'resolved' && p.hiddenReason !== 'admin';
+  const pairs = [], inPair = new Set();
+  for (const m of matches){
+    if (m.matchStatus !== 'accepted') continue;
+    const lost = byId.get(m.lostPostId), found = byId.get(m.foundPostId);
+    if (!lost || !found || !(countable(lost) || countable(found))) continue;
+    pairs.push({ lost, found });
+    inPair.add(lost.id); inPair.add(found.id);
+  }
+  const singles = posts.filter(p => countable(p) && !inPair.has(p.id));
+  return { pairs, singles };
+}
+export function acceptedPairs(posts, matches){
+  const byId = new Map(posts.map(p => [p.id, p]));
+  return matches.filter(m => m.matchStatus === 'accepted')
+    .map(m => ({ lost: byId.get(m.lostPostId), found: byId.get(m.foundPostId) }))
+    .filter(pr => pr.lost && pr.found);
+}
