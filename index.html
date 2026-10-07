@@ -957,7 +957,7 @@ import {
   deleteDoc, query, where, orderBy, limit, startAfter, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
-import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN, PRESET_CATEGORIES, PRESET_COLORS, returnedGroups, acceptedPairs } from "./matching.js";
+import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN, PRESET_CATEGORIES, PRESET_COLORS, returnedGroups, acceptedPairs, buildIdf, cosineSimilarity } from "./matching.js";
 import { evaluatePassword } from "./password-policy.js";
 import { initLang, setLang, getLang, t, optionLabel, applyLang } from "./i18n.js";
 
@@ -2560,13 +2560,25 @@ async function renderAdminScores(){
   $('scoreCheckResult').innerHTML = '';
 }
 
-function runPairCheck(){
+async function runPairCheck(){
   const a = adminPosts.find(p => p.id === $('scoreLost').value);
   const b = adminPosts.find(p => p.id === $('scoreFound').value);
   if (!a || !b){ $('scoreCheckResult').innerHTML = `<p class="score-note">${esc(t('score.pickBoth'))}</p>`; return; }
-  const e = explainPair(a, b, null, null);
-  $('scoreCheckResult').innerHTML = scoreBreakdownHTML(e)
-    + (e.blocked ? '' : `<p class="score-note">${esc(t('score.checkNote'))}</p>`);
+
+  // ให้ใกล้เคียงที่เซิร์ฟเวอร์คิดจริง: (1) ใช้ embedding ที่เซิร์ฟเวอร์เก็บไว้เป็นคะแนนความหมาย
+  // (2) ใช้ตาราง IDF จากประกาศที่เปิดอยู่เมื่อมี >= 10 ใบ (เหมือนฝั่งเซิร์ฟเวอร์)
+  let semantic = null;
+  try{
+    const [sa, sb] = await Promise.all([getDoc(doc(db,'embeddings',a.id)), getDoc(doc(db,'embeddings',b.id))]);
+    if (sa.exists() && sb.exists()) semantic = cosineSimilarity(sa.data().vector, sb.data().vector);
+  }catch(err){ console.warn('อ่าน embedding ไม่ได้ (ใช้คะแนนตัวอักษรอย่างเดียว):', err.message); }
+  const corpus = adminPosts.filter(p => p.status === 'active' || p.id === a.id || p.id === b.id)
+                           .map(p => p.description || '');
+  const idf = corpus.length >= 10 ? buildIdf(corpus) : null;
+
+  const e = explainPair(a, b, idf, semantic);
+  const note = e.blocked ? '' : `<p class="score-note">${esc(t(semantic === null ? 'score.checkNote' : 'score.checkNoteFull'))}</p>`;
+  $('scoreCheckResult').innerHTML = scoreBreakdownHTML(e) + note;
 }
 
 function exportStats(){
