@@ -9,6 +9,10 @@
      - notifyDeclines    อีเมลแจ้งเจ้าของของหายเมื่อผู้พบไม่อนุญาต/หมดเวลา
    =================================================================== */
 
+// แบบประเมินความพึงพอใจ (ตั้งค่าใหม่ได้ด้วยตัวแปร SURVEY_URL ใน workflow)
+const SURVEY_URL = process.env.SURVEY_URL ||
+  "https://docs.google.com/forms/d/e/1FAIpQLSdTzXPjWF4fAi04_Riv3iMfdrYhjRs-xdwMbMCxwDXvhk5UVw/viewform";
+
 export function createLifecycle({ db, admin, sendEmail, wantsEmail, esc, emailShell, itemBlock, SITE_URL }) {
 /* เก็บกวาดข้อมูลที่ชี้ไปยังประกาศที่ถูกลบไปแล้ว (เช่น ผู้ใช้ลบบัญชี) */
 async function cleanupOrphans() {
@@ -149,6 +153,11 @@ async function revealContacts() {
       <p style="font-size:13px;color:#79708F;margin-top:18px;line-height:1.7;">
         เพื่อความปลอดภัย แนะนำให้นัดรับของในที่สาธารณะภายในมหาวิทยาลัยในเวลากลางวัน
         และตรวจสอบลักษณะของให้ตรงกันก่อนส่งมอบ
+      </p>
+      <p style="font-size:13px;color:#79708F;margin-top:14px;line-height:1.7;">
+        หลังนัดรับ–ส่งของเสร็จ ช่วยตอบ
+        <a href="${SURVEY_URL}" style="color:#5B34C9;">แบบประเมินความพึงพอใจสั้น ๆ</a>
+        เพื่อให้เรานำไปปรับปรุงระบบได้นะคะ/ครับ
       </p>`;
 
     if (await wantsEmail(m.lostAuthorId)) await sendEmail({
