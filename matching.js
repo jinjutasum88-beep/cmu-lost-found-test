@@ -231,6 +231,22 @@ export function sameLabel(a, b, presets = []){
   return s.length >= 3 && l.includes(s);
 }
 
+/* ---------- ด่านหมวดหมู่: ไม่เข้มจนพลาดของที่ผู้ใช้เลือกหมวดคลาดเคลื่อน ----------
+   ตัดทิ้งเฉพาะกรณีที่ "ทั้งสองฝั่งเลือกจากรายการสำเร็จรูปและเป็นคนละหมวดที่ไม่เกี่ยวกัน"
+   (เช่น โทรศัพท์ กับ กุญแจ) นอกนั้นปล่อยผ่านให้คะแนนคำอธิบาย/สี/สถานที่/เวลาตัดสิน
+     - หมวดที่ผู้ใช้พิมพ์เอง หรือเลือก "อื่นๆ" = ไม่เข้ากับรายการสำเร็จรูป → ไม่ตัดทิ้ง
+     - หมวดที่คนมักเลือกสลับกัน (RELATED_CATEGORY_GROUPS) ถือว่าเข้ากันได้ */
+export const RELATED_CATEGORY_GROUPS = [
+  ["กระเป๋า", "กระเป๋าสตางค์"],
+];
+
+export function categoriesCompatible(a, b){
+  if (sameLabel(a, b, PRESET_CATEGORIES)) return true;
+  const preset = (c) => PRESET_CATEGORIES.includes(c);
+  if (!preset(a) || !preset(b) || a === "อื่นๆ" || b === "อื่นๆ") return true;
+  return RELATED_CATEGORY_GROUPS.some(g => g.includes(a) && g.includes(b));
+}
+
 /* ---------- 8. คะแนนรวมของคู่ประกาศ ---------- */
 export const MATCH_THRESHOLD = 0.70;   // แจ้งเตือนเมื่อ ≥ 70%
 export const MAX_MATCHES = 3;          // เอาสูงสุด 3 อันดับ
@@ -259,7 +275,7 @@ export const MAX_NEAR_MISSES = 3;
  */
 export function explainPair(postA, postB, idf, semantic = null){
   if (postA.type === postB.type) return { blocked: "sameType" };
-  if (!sameLabel(postA.category, postB.category, PRESET_CATEGORIES)) return { blocked: "category" };
+  if (!categoriesCompatible(postA.category, postB.category)) return { blocked: "category" };
 
   // สี: ตรงกัน = เต็ม, ฝั่งใดฝั่งหนึ่งระบุ "อื่นๆ" = ให้ครึ่งคะแนน, ต่างกัน = ตัดทิ้ง
   let colorScore;
@@ -373,7 +389,7 @@ export function findMatches(target, candidates, semanticOf = null){
 /* คู่ที่ "มีสิทธิ์" ถูกจับ — ใช้กรองก่อนเรียก embedding เพื่อประหยัดโควตา API */
 export function passesHardFilter(a, b){
   if (a.type === b.type) return false;
-  if (!sameLabel(a.category, b.category, PRESET_CATEGORIES)) return false;
+  if (!categoriesCompatible(a.category, b.category)) return false;
   if (!sameLabel(a.color, b.color, PRESET_COLORS) && a.color !== "อื่นๆ" && b.color !== "อื่นๆ") return false;
   return true;
 }
