@@ -23,7 +23,7 @@ test("สถานที่เดียวกัน → แมช และ part
 });
 
 test("explainPair บอกเหตุผลที่ถูกตัดทิ้ง", () => {
-  assert.equal(explainPair(lost, { ...found, category: "กุญแจ" }, null).blocked, "category");
+  assert.equal(explainPair({ ...lost, category: "โทรศัพท์" }, { ...found, category: "กุญแจ" }, null).blocked, "category");
   assert.equal(explainPair(lost, { ...found, color: "แดง" }, null).blocked, "color");
   assert.equal(explainPair(lost, { ...lost, id: "x" }, null).blocked, "sameType");
 });
@@ -37,4 +37,24 @@ test("หมวดที่พิมพ์เอง: นาฬิกา ≈ น�
     description:"นาฬิกาcasio หน้าปัดสีฟ้า มีวงเล็ก ๆ ข้างในอีก3 มีสนิมค่อนข้างเยอะ" };
   const b = { ...a, id:"b", type:"lost", category:"นาฬิกาข้อมือ", description:"นาฬิกาข้อมือหน้าปัดสีฟ้า" };
   assert.equal(explainPair(a, b, null).blocked, null);
+});
+
+
+import { categoriesCompatible } from "../matching.js";
+test("ด่านหมวดหมู่: ตัดเฉพาะหมวดสำเร็จรูปที่ไม่เกี่ยวกัน", () => {
+  assert.ok(categoriesCompatible("กระเป๋า", "กระเป๋าสตางค์"));      // คนมักเลือกสลับกัน
+  assert.ok(categoriesCompatible("นาฬิกา", "โทรศัพท์"));            // พิมพ์เอง → ไม่ตัดทิ้ง
+  assert.ok(categoriesCompatible("อื่นๆ", "กุญแจ"));                // อื่นๆ → ไม่ตัดทิ้ง
+  assert.ok(!categoriesCompatible("โทรศัพท์", "กุญแจ"));            // สำเร็จรูปคนละหมวด → ตัด
+  assert.ok(!categoriesCompatible("กระเป๋าสตางค์", "หูฟัง"));
+});
+
+test("กระเป๋าสตางค์ที่เลือกหมวดเป็น 'กระเป๋า' ยังจับคู่ได้ (เคสจากหน้าจอจริง)", () => {
+  const lost = { id: "l", type: "lost", category: "กระเป๋าสตางค์", color: "ดำ", place: "หอสมุด", eventDate: "2026-10-06",
+    description: "กระเป๋าสตางค์สีดำ ไม่มีลวดลาย มีเงินอยู่ในกระเป๋า" };
+  const found = { id: "f", type: "found", category: "กระเป๋า", color: "ดำ", place: "หอสมุด", eventDate: "2026-10-06",
+    description: "กระเป๋าสตางค์ไม่มีลวดลาย มีเงินในกระเป๋า100บาท" };
+  const r = explainPair(lost, found, null);
+  assert.equal(r.blocked, null);
+  assert.ok(r.score >= MATCH_THRESHOLD, `คะแนน ${r.score}`);
 });

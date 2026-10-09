@@ -131,3 +131,14 @@ test("แจ้งเจ้าของไม่สำเร็จ → ไม่
   assert.equal(await lc.notifyDeclines(), 0);
   assert.equal(db.store.matches.m1.ownerNotifiedAt, undefined);
 });
+
+test("อีเมลยืนยันคู่มีลิงก์แบบประเมินความพึงพอใจ ทั้งสองฝ่าย", async () => {
+  const { lc, sent } = build({
+    matches: { m1: { matchStatus: "accepted", contactRevealed: false, lostPostId: "L", foundPostId: "F",
+                     lostAuthorId: "u1", foundAuthorId: "u2" } },
+    posts: { L: { authorName: "นนทกร", authorEmail: "l@cmu.ac.th" }, F: { authorName: "sakuma", authorEmail: "f@cmu.ac.th" } },
+  });
+  await lc.revealContacts();
+  assert.equal(sent.length, 2);
+  for (const mail of sent) assert.match(mail.html, /docs\.google\.com\/forms\/d\/e\/[A-Za-z0-9_-]+\/viewform/);
+});
