@@ -1,7 +1,7 @@
 /* ===================================================================
    match-and-notify.mjs
    -------------------------------------------------------------------
-   ทำงานบน GitHub Actions ทุกๆ 5 นาที หน้าที่หลักสามอย่าง:
+   ทำงานบน GitHub Actions (cron ทุก 15 นาที และสั่งรันเองได้) หน้าที่หลักสามอย่าง:
 
    1) จับคู่ประกาศ  — ความหมายของ processed:
         false = ยังไม่มีคู่ที่ใช้ได้ → วนมาเทียบใหม่ "ทุกรอบ" จนกว่าจะเจอคู่
@@ -11,8 +11,11 @@
 
    2) ส่งอีเมลแจ้งเตือน — เมื่อเจอคู่ ส่งอีเมลหาทั้งสองฝ่าย
 
-   3) เปิดเผยข้อมูลติดต่อ — เมื่อเจ้าของของหายกดยืนยันว่า "ใช่"
-      จึงค่อยเขียนอีเมลของอีกฝ่ายลงในเอกสาร และส่งอีเมลให้ทั้งคู่
+   3) เปิดเผยข้อมูลติดต่อ — เมื่อเจ้าของของหายกดยืนยันว่า "ใช่" (matchStatus = accepted)
+      ส่งอีเมลยืนยันให้ทั้งคู่ (เว็บอ่านข้อมูลติดต่อจาก matchContacts ได้ทันที)
+
+   รอบดูแลรายชั่วโมง (หรือเมื่อกดรันเอง) ยังทำ: ปิดคู่ที่หมดเวลาตอบ, เก็บกวาดข้อมูลกำพร้า,
+   และบังคับโควตาโพสต์ (enforce-quota.mjs)
 
    เหตุผลที่ต้องทำฝั่งเซิร์ฟเวอร์: กติกาความปลอดภัยของ Firestore
    ปิดไม่ให้ผู้ใช้อ่านประกาศของคนอื่นเลย การจับคู่จึงทำในเบราว์เซอร์ไม่ได้
@@ -22,6 +25,7 @@
 import admin from "firebase-admin";
 import { appendRunRow, runToRow } from "./sheets-log.mjs";
 import { createLifecycle } from "./lifecycle.mjs";
+import { enforceQuota } from "./enforce-quota.mjs";
 import { findCandidates, passesHardFilter, cosineSimilarity, MATCH_THRESHOLD } from "../matching.js";
 
 /* ---------- ตั้งค่าจาก GitHub Secrets ---------- */
@@ -487,6 +491,7 @@ async function saveRunLog(extra) {
       runStats.declineEmails = await notifyDeclines();
       runStats.pairsClosed = await syncResolvedPairs();
       cleaned = await cleanupOrphans();
+      runStats.quotaHidden = await enforceQuota({ db, admin }).catch(e => { console.error("ตรวจโควตาไม่สำเร็จ (ไม่กระทบการจับคู่):", e.message); return 0; });
     }
     console.log(`เสร็จสิ้น — สร้างคู่ใหม่ ${created}, เปิดเผยข้อมูลติดต่อ ${revealed}, เก็บกวาด ${cleaned}`);
     await saveRunLog({ ok: true, revealed, cleaned, durationMs: Date.now() - startedAt });
