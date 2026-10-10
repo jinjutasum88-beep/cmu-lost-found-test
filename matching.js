@@ -264,6 +264,29 @@ const dateOf  = p => p.eventDate
 /* น้ำหนักของแต่ละองค์ประกอบในคะแนนรวม (รวมกันได้ 1.00) */
 export const WEIGHTS = { color: 0.20, desc: 0.55, place: 0.15, time: 0.10 };
 
+/* ---------- กันคะแนนสูงเกินจริงของคู่ที่ "ไม่เกี่ยวกัน" ----------
+   ปัญหาที่พบ: ปากกา iPad vs AirPods, คีย์การ์ด vs ขวดน้ำ ได้ 65–70%
+   สาเหตุ 2 ข้อ
+   (1) cosine ของ embedding ไม่เคยเป็น 0 แม้ข้อความไม่เกี่ยวกัน (มักอยู่ราว 0.6–0.9)
+       แต่เดิมเอาค่าดิบมาใช้เป็น "ความคล้าย 0–1" ตรง ๆ จึงได้ความหมายเกือบครึ่ง
+       ทั้งที่ไม่เกี่ยวกันเลย → ต้อง "หักค่าฐาน" ออกก่อน (SEMANTIC_FLOOR..CEIL → 0..1)
+   (2) สี+สถานที่+เวลา รวมกันได้ถึง 45 คะแนน และของสองชิ้นมักบังเอิญตรงกันเอง
+       (ที่เดียวกัน วันเดียวกัน) → ต้องมีหลักฐานจากคำอธิบายก่อน
+       ถ้าคำอธิบายคล้ายกันน้อยกว่า DESC_FULL คะแนนของ 3 ส่วนนี้จะถูกหักตามสัดส่วน
+   ปรับค่าได้ที่นี่ที่เดียว ถ้าหน้าแอดมินแสดงว่าคู่จริงได้ความหมายต่ำเกินไป/คู่มั่วยังสูงอยู่ */
+export const SEMANTIC_FLOOR = 0.70;   // cosine ที่ถือว่า "ไม่เกี่ยวกันเลย" → 0
+export const SEMANTIC_CEIL  = 0.95;   // cosine ที่ถือว่า "ความหมายเดียวกัน" → 1
+// คำอธิบายคล้ายเท่านี้ขึ้นไป สี/สถานที่/เวลาจึงได้คะแนนเต็ม
+// 0.45 = จุดที่คู่ซึ่งสี/สถานที่/เวลาตรงเต็มเริ่มผ่านเกณฑ์ 70% พอดี ((0.70 − 0.45) ÷ 0.55 ≈ 0.455)
+// จึงไม่ทำให้คู่ที่เคยผ่านเกณฑ์ตกเกณฑ์ แต่กดคะแนนของคู่ที่คำอธิบายไม่เกี่ยวกันลงมาก
+export const DESC_FULL = 0.45;
+
+export function adjustSemantic(cos){
+  if (cos === null || cos === undefined || Number.isNaN(cos)) return null;
+  const x = (cos - SEMANTIC_FLOOR) / (SEMANTIC_CEIL - SEMANTIC_FLOOR);
+  return Math.max(0, Math.min(1, x));
+}
+
 /* เกณฑ์ "เกือบแมช" — คู่ที่คะแนนอยู่ระหว่างค่านี้ถึง MATCH_THRESHOLD จะถูกบันทึกให้แอดมินดู
    (ผู้ใช้ไม่เห็นและไม่ถูกแจ้งเตือน) */
 export const NEAR_MISS_MIN = 0.45;
@@ -289,7 +312,9 @@ export function explainPair(postA, postB, idf, semantic = null){
   // ชั้นที่ 2 (semantic): ดูที่ "ความหมาย" จาก embedding — เก่งเรื่องคำต่างที่หมายถึงของเดียวกัน
   // ถ้าเรียก embedding ไม่ได้ (semantic = null) จะใช้เฉพาะชั้นที่ 1
   const hasSemantic = semantic !== null && semantic !== undefined;
-  const descSim = hasSemantic ? 0.5 * lexical + 0.5 * semantic : lexical;
+  // semantic ที่รับเข้ามาเป็นค่า cosine ดิบ → หักค่าฐานก่อนนำไปรวม (ดูคำอธิบายที่ SEMANTIC_FLOOR)
+  const semanticAdj = hasSemantic ? adjustSemantic(semantic) : null;
+  const descSim = hasSemantic ? 0.5 * lexical + 0.5 * semanticAdj : lexical;
 
   const pa = placeOf(postA), pb = placeOf(postB);
   const placeScore = (pa && pa === pb) ? 1
@@ -308,14 +333,23 @@ export function explainPair(postA, postB, idf, semantic = null){
     place: { value: placeScore, weight: WEIGHTS.place, points: WEIGHTS.place * placeScore },
     time:  { value: timeScore,  weight: WEIGHTS.time,  points: WEIGHTS.time  * timeScore }
   };
-  const score = Math.min(1, parts.color.points + parts.desc.points
-                          + parts.place.points + parts.time.points);
+  // สี/สถานที่/เวลา ช่วยได้ แต่ห้ามแบกคู่ที่คำอธิบายไม่เกี่ยวกัน:
+  // คำอธิบายคล้ายน้อยกว่า DESC_FULL → หักคะแนน 3 ส่วนนี้ตามสัดส่วน
+  const metaPoints = parts.color.points + parts.place.points + parts.time.points;
+  const evidence = Math.max(0, Math.min(1, descSim / DESC_FULL));
+  parts.evidence = { value: evidence, weight: null, points: (-(1 - evidence) * metaPoints) || 0 };   // "|| 0" กันค่า -0
+
+  const score = Math.max(0, Math.min(1, parts.color.points + parts.desc.points
+                          + parts.place.points + parts.time.points + parts.evidence.points));
 
   return {
     blocked: null,
-    score, descSim, lexical, semantic: hasSemantic ? semantic : null,
+    score, descSim, lexical,
+    semantic: hasSemantic ? semantic : null,       // ค่า cosine ดิบ (ใช้แสดงในหน้าแอดมิน)
+    semanticAdj,                                    // หลังหักค่าฐาน (ค่าที่ใช้คิดคะแนนจริง)
+    evidence,
     parts, gap,
-    reasons: buildReasons(postA, postB, lexical, semantic, placeScore, gap)
+    reasons: buildReasons(postA, postB, lexical, semanticAdj, placeScore, gap)
   };
 }
 
@@ -326,6 +360,7 @@ export function scorePair(postA, postB, idf, semantic = null){
   return {
     score: e.score,
     descSim: e.descSim, lexical: e.lexical, semantic: e.semantic,
+    semanticAdj: e.semanticAdj, evidence: e.evidence,
     parts: e.parts,
     reasons: e.reasons
   };
@@ -333,10 +368,11 @@ export function scorePair(postA, postB, idf, semantic = null){
 
 /* อธิบายให้ผู้ใช้เข้าใจว่าทำไมระบบถึงคิดว่าตรงกัน */
 function buildReasons(a, b, lexical, semantic, placeScore, gap){
+  // semantic ที่นี่คือค่าที่หักค่าฐานแล้ว (0–1)
   const r = [`หมวดหมู่ตรงกัน (${a.category})`];
   if (sameLabel(a.color, b.color, PRESET_COLORS)) r.push(`สีตรงกัน (${a.color})`);
   if (lexical >= 0.4) r.push(`คำอธิบายใช้คำคล้ายกัน ${Math.round(lexical * 100)}%`);
-  if (semantic !== null && semantic !== undefined && semantic >= 0.6)
+  if (semantic !== null && semantic !== undefined && semantic >= 0.5)
     r.push(`ความหมายของคำอธิบายใกล้เคียงกัน ${Math.round(semantic * 100)}%`);
   if (placeScore === 1) r.push(`สถานที่เดียวกัน (${placeOf(a)})`);
   if (gap !== null && gap <= 7) r.push(`เวลาใกล้เคียงกัน (ห่างกัน ${Math.round(gap)} วัน)`);

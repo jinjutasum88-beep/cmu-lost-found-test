@@ -304,6 +304,7 @@
   .score-table th{font-weight:600;color:var(--ink-soft);font-size:12px}
   .score-table td.num,.score-table th.num{text-align:right;font-variant-numeric:tabular-nums}
   .score-table tr.total td{font-weight:700;border-bottom:0}
+  .score-table tr.penalty td{color:var(--lost);font-size:12px}
   .score-verdict{margin-top:10px;font-size:13px;font-weight:600}
   .score-verdict.pass{color:var(--found)}
   .score-verdict.fail{color:var(--lost)}
@@ -770,23 +771,23 @@
             <div class="field">
               <label for="pCategory" data-i18n="create.category"></label>
               <select id="pCategory" required onchange="toggleOther('pCategory')"></select>
-              <input type="text" id="pCategoryOther" class="hidden" style="margin-top:8px" data-i18n-ph="create.categoryOther" data-i18n-aria="create.categoryOther">
+              <input type="text" id="pCategoryOther" maxlength="60" class="hidden" style="margin-top:8px" data-i18n-ph="create.categoryOther" data-i18n-aria="create.categoryOther">
             </div>
             <div class="field">
               <label for="pColor" data-i18n="create.color"></label>
               <select id="pColor" required onchange="toggleOther('pColor')"></select>
-              <input type="text" id="pColorOther" class="hidden" style="margin-top:8px" data-i18n-ph="create.colorOther" data-i18n-aria="create.colorOther">
+              <input type="text" id="pColorOther" maxlength="40" class="hidden" style="margin-top:8px" data-i18n-ph="create.colorOther" data-i18n-aria="create.colorOther">
             </div>
           </div>
           <div class="field">
             <label for="pDesc" data-i18n="create.desc"></label>
-            <textarea id="pDesc" rows="4" required data-i18n-ph="create.descPh"></textarea>
+            <textarea id="pDesc" rows="4" required maxlength="2000" data-i18n-ph="create.descPh"></textarea>
           </div>
           <div class="row2">
             <div class="field">
               <label for="pLocation" data-i18n="create.location"></label>
               <select id="pLocation" required onchange="toggleOther('pLocation')"></select>
-              <input type="text" id="pLocationOther" class="hidden" style="margin-top:8px" data-i18n-ph="create.locationOther" data-i18n-aria="create.locationOther">
+              <input type="text" id="pLocationOther" maxlength="120" class="hidden" style="margin-top:8px" data-i18n-ph="create.locationOther" data-i18n-aria="create.locationOther">
             </div>
             <div class="field">
               <label for="pDate" data-i18n="create.date"></label>
@@ -795,7 +796,7 @@
           </div>
           <div class="field hidden" id="pickupNoteField">
             <label for="pPickupNote" data-i18n="create.pickupNote"></label>
-            <textarea id="pPickupNote" rows="2" data-i18n-ph="create.pickupNotePh" oninput="onPickupNoteInput()"></textarea>
+            <textarea id="pPickupNote" rows="2" maxlength="500" data-i18n-ph="create.pickupNotePh" oninput="onPickupNoteInput()"></textarea>
             <div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.6" data-i18n="create.pickupNoteHint"></div>
             <div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.6" data-i18n="create.shareNotice"></div>
             <label class="pickup-check">
@@ -941,7 +942,7 @@ import {
   deleteDoc, query, where, orderBy, limit, startAfter, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ACTION_URL, isAllowedEmail, thaiError } from "./firebase-config.js";
-import { hasReadableText, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN, PRESET_CATEGORIES, PRESET_COLORS, returnedGroups, acceptedPairs, buildIdf, cosineSimilarity } from "./matching.js";
+import { hasReadableText, adjustSemantic, explainPair, MATCH_THRESHOLD, NEAR_MISS_MIN, PRESET_CATEGORIES, PRESET_COLORS, returnedGroups, acceptedPairs, buildIdf, cosineSimilarity } from "./matching.js";
 import { evaluatePassword } from "./password-policy.js";
 import { initLang, setLang, getLang, t, optionLabel, applyLang } from "./i18n.js";
 
@@ -1757,6 +1758,31 @@ function onPickupUnsureChange(){
   if (unsure) $('pPickupNote').value = t('create.pickupNoteUnsureText');
   else if ($('pPickupNote').value === t('create.pickupNoteUnsureText')) $('pPickupNote').value = '';
 }
+/* ห้ามใส่อิโมจิในช่องข้อความของฟอร์มประกาศ (ตัดออกทันทีทั้งตอนพิมพ์และตอนวาง) */
+const EMOJI_RE = /[\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Modifier}\u200d\ufe0f\u20e3]/gu;
+const EMOJI_FIELDS = ['pDesc','pCategoryOther','pColorOther','pLocationOther','pPickupNote'];
+let emojiHintTimer = null;
+function stripEmojiInput(el){
+  EMOJI_RE.lastIndex = 0;
+  if (!EMOJI_RE.test(el.value)) { EMOJI_RE.lastIndex = 0; return; }
+  EMOJI_RE.lastIndex = 0;
+  const pos = el.selectionStart ?? el.value.length;
+  const before = el.value.slice(0, pos).replace(EMOJI_RE, '');
+  el.value = el.value.replace(EMOJI_RE, '');
+  try { el.setSelectionRange(before.length, before.length); } catch(_){}
+  const msg = $('postMsg');
+  if (msg){
+    msg.style.color = 'var(--lost)'; msg.textContent = t('create.noEmoji');
+    clearTimeout(emojiHintTimer);
+    emojiHintTimer = setTimeout(() => { if (msg.textContent === t('create.noEmoji')) msg.textContent = ''; }, 3000);
+  }
+}
+EMOJI_FIELDS.forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', () => stripEmojiInput(el));
+});
+
 function onPickupNoteInput(){
   if ($('pPickupUnsure').checked) $('pPickupUnsure').checked = false;
 }
@@ -1851,6 +1877,12 @@ async function handleCreatePost(e){
       msg.style.color = 'var(--lost)'; msg.textContent = t('create.pickupNoteRequired'); return false;
     }
   }
+
+  if (EMOJI_FIELDS.some(id => EMOJI_RE.test($(id).value))){
+    EMOJI_RE.lastIndex = 0;
+    msg.style.color = 'var(--lost)'; msg.textContent = t('create.noEmoji'); return false;
+  }
+  EMOJI_RE.lastIndex = 0;
 
   const desc = $('pDesc').value.trim();
   let autoCategorized = false, finalCategory = category;
@@ -2174,13 +2206,13 @@ async function sendReport(postId){
   const msg = $('rpMsg');
   if (!reason){ msg.style.color='var(--lost)'; msg.textContent = t('report.needReason'); return; }
   try{
-    await addDoc(collection(db,'reports'), {
+    await setDoc(doc(db,'reports', postId + '_' + CURRENT_UID), {
       postId, reporterId: CURRENT_UID, reporterEmail: auth.currentUser.email,
       reason, status: 'open', createdAt: serverTimestamp()
     });
     msg.style.color='var(--found)'; msg.textContent = t('report.sent');
     setTimeout(() => document.querySelector('.modal-bg')?.remove(), 1500);
-  }catch(err){ msg.style.color='var(--lost)'; msg.textContent = err.message; }
+  }catch(err){ msg.style.color='var(--lost)'; msg.textContent = err.code === 'permission-denied' ? t('report.already') : err.message; }
 }
 
 async function sendResetFromProfile(){
@@ -2422,10 +2454,15 @@ function scoreBreakdownHTML(e){
       <td class="num">${pctOf(e.parts[k].value)}%</td>
       <td class="num">× ${pctOf(e.parts[k].weight)}%</td>
       <td class="num">${(e.parts[k].points * 100).toFixed(1)}</td></tr>`).join('');
+  const ev = e.parts.evidence;
+  const evRow = (ev && ev.points < 0)
+    ? `<tr class="penalty"><td colspan="3">${esc(t('score.evidence'))} (${pctOf(ev.value)}%)</td>
+      <td class="num">${(ev.points * 100).toFixed(1)}</td></tr>` : '';
   const pass = e.score >= MATCH_THRESHOLD;
   return `<table class="score-table">
       <tr><th>${esc(t('score.part'))}</th><th class="num">${esc(t('score.value'))}</th><th class="num">${esc(t('score.weight'))}</th><th class="num">${esc(t('score.points'))}</th></tr>
       ${rows}
+      ${evRow}
       <tr class="total"><td colspan="3">${esc(t('score.total'))}</td><td class="num">${(e.score * 100).toFixed(1)} / 100</td></tr>
     </table>
     <div class="score-verdict ${pass?'pass':'fail'}">${esc(t(pass ? 'score.pass' : 'score.fail', { pct: pctOf(MATCH_THRESHOLD) }))}</div>`;
@@ -2438,7 +2475,8 @@ function scoreItemHTML(m){
     ? scoreBreakdownHTML(e)
     : `<p class="score-note">${esc(t('score.noParts'))}</p>`;
   const sem = (m.semanticScore === null || m.semanticScore === undefined)
-    ? t('score.noSemantic') : pctOf(m.semanticScore) + '%';
+    ? t('score.noSemantic')
+    : pctOf(m.semanticScore) + '% → ' + t('score.semanticAdj') + ' ' + pctOf(adjustSemantic(m.semanticScore)) + '%';
   return `<details class="score-item"><summary>
       <span class="pct">${pctOf(m.similarityScore)}%</span>
       <span class="pair"><b>${esc(t('common.lost'))}:</b> ${esc((l.description||'-').slice(0,60))}<br>
