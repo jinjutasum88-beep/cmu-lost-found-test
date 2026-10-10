@@ -139,3 +139,13 @@ describe("findCandidates — คู่ที่ไม่เกี่ยวกั
     assert.equal(r.nearMisses.length, 0);
   });
 });
+
+describe("เวลา: วันที่เจอต้องไม่อยู่ก่อนวันที่ของหาย", () => {
+  const mk = (lostDate, foundDate) => explainPair(
+    lost({ category: "หูฟัง", description: "แอร์พอดสีขาว", eventDate: lostDate }),
+    found({ category: "หูฟัง", description: "แอร์พอดสีขาว", eventDate: foundDate }), null, null).parts.time.value;
+  test("เจอหลังหาย 3 วัน = 80%", () => assert.equal(mk("2569-10-05", "2569-10-08"), 0.8));
+  test("เจอวันเดียวกัน = 100%", () => assert.equal(mk("2569-10-05", "2569-10-05"), 1));
+  test("เจอก่อนหาย 1 วัน ยังเผื่อให้ (100%)", () => assert.equal(mk("2569-10-05", "2569-10-04"), 1));
+  test("เจอก่อนหาย 3 วัน = 0", () => assert.equal(mk("2569-10-05", "2569-10-02"), 0));
+});
