@@ -2471,8 +2471,10 @@ function scoreBreakdownHTML(e){
 function scoreItemHTML(m){
   const l = m.lostSnap || {}, f = m.foundSnap || {};
   const e = { blocked: null, score: m.similarityScore || 0, parts: m.parts };
+  const oldFormula = m.parts && !m.parts.evidence
+    ? `<p class="score-note">${esc(t('score.oldFormula'))}</p>` : '';
   const detail = m.parts
-    ? scoreBreakdownHTML(e)
+    ? scoreBreakdownHTML(e) + oldFormula
     : `<p class="score-note">${esc(t('score.noParts'))}</p>`;
   const sem = (m.semanticScore === null || m.semanticScore === undefined)
     ? t('score.noSemantic')
@@ -2623,7 +2625,12 @@ async function runPairCheck(){
 
   const e = explainPair(a, b, idf, semantic);
   const note = e.blocked ? '' : `<p class="score-note">${esc(t(semantic === null ? 'score.checkNote' : 'score.checkNoteFull'))}</p>`;
-  $('scoreCheckResult').innerHTML = scoreBreakdownHTML(e) + note;
+  // แสดงค่าตัวอักษร/ความหมาย (ดิบ → หลังหักค่าฐาน) เหมือนในรายการคู่ เพื่อใช้ดูว่าค่าฐานเหมาะหรือไม่
+  const semTxt = e.blocked ? '' : (semantic === null
+    ? t('score.noSemantic')
+    : pctOf(semantic) + '% → ' + t('score.semanticAdj') + ' ' + pctOf(e.semanticAdj) + '%');
+  const detail = e.blocked ? '' : `<p class="score-note">${esc(t('score.lexical'))}: ${pctOf(e.lexical)}% · ${esc(t('score.semantic'))}: ${esc(semTxt)}</p>`;
+  $('scoreCheckResult').innerHTML = scoreBreakdownHTML(e) + detail + note;
 }
 
 function exportStats(){

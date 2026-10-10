@@ -8,7 +8,10 @@
     "test": "node --test tests/*.mjs",
     "test:coverage": "node --test --experimental-test-coverage tests",
     "match": "node scripts/match-and-notify.mjs",
-    "evaluate": "node scripts/evaluate.mjs"
+    "evaluate": "node scripts/evaluate.mjs",
+    "calibrate": "node scripts/calibrate-semantic.mjs",
+    "cleanup": "node scripts/cleanup-old-scores.mjs",
+    "export": "node scripts/export-data.mjs"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0"
