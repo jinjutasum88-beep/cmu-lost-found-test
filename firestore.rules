@@ -69,7 +69,16 @@ service cloud.firestore {
       allow update: if verifiedCmu() && (
                       (resource.data.authorId == request.auth.uid
                        && changedKeys().hasOnly(['type','category','color','description','location','eventDate','pickupNote','thumbUrl','hasImage','status'])
-                       && request.resource.data.status in ['active','resolved'])
+                       && request.resource.data.status in ['active','resolved']
+                       // เพดานความยาวตอนแก้ไข (ตรงกับตอนสร้าง) กันยัดข้อความยาวเพื่อให้ embedding/ค่าใช้จ่ายพุ่ง
+                       && request.resource.data.description is string
+                       && request.resource.data.description.size() > 0
+                       && request.resource.data.description.size() <= 2000
+                       && request.resource.data.category.size() <= 60
+                       && request.resource.data.color.size() <= 40
+                       && request.resource.data.location.size() <= 120
+                       && request.resource.data.thumbUrl.size() < 60000
+                       && (!('pickupNote' in request.resource.data) || request.resource.data.pickupNote.size() <= 500))
                       || (isAdmin()
                           && changedKeys().hasOnly(['status','hiddenReason','hiddenAt']))
                       // เจ้าของของหายกด "ได้รับคืนแล้ว" -> ปิดประกาศของผู้พบในคู่ที่ยืนยันแล้วให้ด้วย
@@ -112,7 +121,8 @@ service cloud.firestore {
     }
 
     // ---------- ผลการจับคู่ ----------
-    // เขียนโดยเซิร์ฟเวอร์เท่านั้น ต้องได้รับความยินยอมจากทั้งสองฝ่ายก่อนเปิดเผยข้อมูลติดต่อ
+    // สร้างโดยเซิร์ฟเวอร์เท่านั้น เจ้าของของหายกด "ใช่" แล้วเปิดเผยข้อมูลติดต่อทันที (accepted)
+    // (ขั้น awaiting_finder/declined ยังรองรับเฉพาะคู่เก่าที่ค้างอยู่ก่อนเปลี่ยนระบบ)
     match /matches/{matchId} {
       allow read: if verifiedCmu()
                   && (request.auth.uid in resource.data.participantIds || isAdmin());
@@ -122,12 +132,12 @@ service cloud.firestore {
       allow update: if verifiedCmu()
                     && changedKeys().hasOnly(['matchStatus'])
                     && (
-                      // ขั้นที่ 1 เจ้าของของหายตัดสินว่าใช่ของตัวเองหรือไม่
+                      // เจ้าของของหายตัดสินว่าใช่ของตัวเองหรือไม่ — "ใช่" = accepted ทันที
                       (resource.data.lostAuthorId == request.auth.uid
                        && resource.data.matchStatus == 'waiting_for_user'
-                       && request.resource.data.matchStatus in ['awaiting_finder', 'rejected'])
+                       && request.resource.data.matchStatus in ['accepted', 'rejected'])
                       ||
-                      // ขั้นที่ 2 ผู้ที่เก็บของได้ยินยอมให้เปิดเผยข้อมูลติดต่อหรือไม่
+                      // (คู่เก่าที่ค้างที่ awaiting_finder) ผู้ที่เก็บของได้ยินยอมให้เปิดเผยข้อมูลติดต่อหรือไม่
                       (resource.data.foundAuthorId == request.auth.uid
                        && resource.data.matchStatus == 'awaiting_finder'
                        && request.resource.data.matchStatus in ['accepted', 'declined'])
@@ -151,8 +161,10 @@ service cloud.firestore {
     // ---------- การรายงานเนื้อหาไม่เหมาะสม ----------
     match /reports/{reportId} {
       allow read:   if isAdmin();
+      // id ต้องเป็น "<postId>_<uid>" จึงรายงานโพสต์เดียวกันได้คนละครั้ง (ครั้งที่สองจะถูกปฏิเสธ)
       allow create: if verifiedCmu()
                     && request.resource.data.reporterId == request.auth.uid
+                    && reportId == request.resource.data.postId + '_' + request.auth.uid
                     && request.resource.data.status == 'open'
                     && request.resource.data.reason.size() > 0
                     && request.resource.data.reason.size() <= 500;
@@ -161,8 +173,10 @@ service cloud.firestore {
     }
 
     // ---------- เวกเตอร์ embedding — เซิร์ฟเวอร์เท่านั้น ----------
+    // แอดมินอ่านได้ (ใช้ในหน้า "คะแนนการจับคู่" เพื่อคิดคะแนนความหมายให้ตรงกับเซิร์ฟเวอร์) เขียนไม่ได้
     match /embeddings/{postId} {
-      allow read, write: if false;
+      allow read: if verifiedCmu() && isAdmin();
+      allow write: if false;
     }
 
     match /{document=**} {

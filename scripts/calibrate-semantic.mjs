@@ -46,9 +46,9 @@ console.log(`คู่ที่ผ่านด่านบังคับแล�
 console.log(`cosine ดิบของทุกคู่  min=${f2(all[0] ?? null)}  P25=${f2(q(all,.25))}  P50=${f2(q(all,.5))}  P75=${f2(q(all,.75))}  P90=${f2(q(all,.9))}  P95=${f2(q(all,.95))}  max=${f2(all.at(-1) ?? null)}`);
 console.log(`คู่ที่ผู้ใช้ยืนยันว่าใช่ (accepted): ${accepted.length} คู่  ค่าดิบ=${accepted.map(f2).join(", ") || "-"}`);
 
-if (all.length < 10) { console.log("ข้อมูลน้อยเกินไป (< 10 คู่) แนะนำให้คงค่าเดิม 0.70 / 0.95"); process.exit(0); }
+if (all.length < 10) { console.log("ข้อมูลน้อยเกินไป (< 10 คู่) แนะนำให้คงค่าเดิม 0.78 / 0.95"); process.exit(0); }
 const floor = Math.ceil(q(all, 0.9) * 100) / 100;
 const ceil = accepted.length ? Math.max(floor + 0.10, Math.round(q(accepted, 0.5) * 100) / 100 + 0.05) : 0.95;
 console.log(`\nแนะนำ: SEMANTIC_FLOOR = ${floor.toFixed(2)}   SEMANTIC_CEIL = ${Math.min(1, ceil).toFixed(2)}`);
-console.log("(ค่าปัจจุบันใน matching.js: 0.70 / 0.95)");
+console.log("(ค่าปัจจุบันใน matching.js: 0.78 / 0.95)");
 process.exit(0);
