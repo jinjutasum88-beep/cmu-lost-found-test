@@ -1,0 +1,38 @@
+name: ล้างผลคะแนนสูตรเก่า
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "ลบจริง (ไม่ติ๊ก = ดูเฉยๆ ไม่ลบอะไร)"
+        required: false
+        type: boolean
+        default: false
+      drop_waiting:
+        description: "ลบคู่ที่ยังรอเจ้าของตอบและเป็นสูตรเก่าด้วย (ต้องติ๊ก 'ลบจริง' คู่กัน)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm install --omit=dev
+
+      - name: ล้างผลเก่า
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          APPLY: ${{ inputs.apply }}
+          DROP_WAITING: ${{ inputs.drop_waiting }}
+        run: |
+          ARGS=""
+          if [ "$APPLY" = "true" ]; then ARGS="$ARGS --apply"; fi
+          if [ "$DROP_WAITING" = "true" ]; then ARGS="$ARGS --drop-waiting"; fi
+          node scripts/cleanup-old-scores.mjs $ARGS
