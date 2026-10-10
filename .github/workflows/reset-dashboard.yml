@@ -1,0 +1,47 @@
+name: ล้างแดชบอร์ดก่อนเปิดเว็บจริง
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "ลบจริง (ไม่ติ๊ก = ดูเฉยๆ ไม่ลบอะไร)"
+        required: false
+        type: boolean
+        default: false
+      posts:
+        description: "ล้างประกาศ รูป และ embedding ด้วย (ถ้าไม่ติ๊ก ล้างแค่ผลจับคู่และสถิติ)"
+        required: false
+        type: boolean
+        default: false
+      confirm:
+        description: "ถ้าจะลบจริง ให้พิมพ์คำว่า RESET"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm install --omit=dev
+
+      - name: ล้างข้อมูลทดสอบ
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          APPLY: ${{ inputs.apply }}
+          POSTS: ${{ inputs.posts }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          ARGS=""
+          if [ "$APPLY" = "true" ]; then
+            if [ "$CONFIRM" != "RESET" ]; then echo "จะลบจริงต้องพิมพ์ RESET ในช่อง confirm"; exit 1; fi
+            ARGS="$ARGS --apply"
+          fi
+          if [ "$POSTS" = "true" ]; then ARGS="$ARGS --posts"; fi
+          node scripts/reset-dashboard.mjs $ARGS
